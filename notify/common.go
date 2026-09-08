@@ -2,11 +2,29 @@ package notify
 
 import (
 	"go_binance_futures/models"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/beego/beego/v2/client/orm"
 	"github.com/beego/beego/v2/core/config"
 )
+
+// 推送格式化: #### 字段行转列表, 状态加图标, 数字去尾零
+var (
+	reTidyHead = regexp.MustCompile(`(?m)^#### `)
+	reTidyZeroA = regexp.MustCompile(`(\.[0-9]*?)0+([^0-9]|$)`)
+	reTidyZeroB = regexp.MustCompile(`\.([^0-9]|$)`)
+)
+
+func TidyMarkdown(s string) string {
+	s = reTidyHead.ReplaceAllString(s, "- ")
+	s = strings.ReplaceAll(s, ">失败</font>", ">❌ 失败</font>")
+	s = strings.ReplaceAll(s, ">成功</font>", ">✅ 成功</font>")
+	s = reTidyZeroA.ReplaceAllString(s, "$1$2")
+	s = reTidyZeroB.ReplaceAllString(s, "$1")
+	return s
+}
 
 func nowTime() string {
 	return time.Now().Format("2006-01-02 15:04:05")
