@@ -38,6 +38,9 @@ const (
 	wsNoDataAlertThreshold                             = 3 * time.Minute
 	wsNoDataAlertInterval                              = 10 * time.Minute
 	wsNoDataCheckInterval                              = 30 * time.Second
+
+	// 静默超过该阈值视为僵尸连接(链路静默丢断, TCP 未报错), 主动关闭触发外层循环重连
+	wsNoDataReconnectThreshold = 5 * time.Minute
 	futuresOrderTypeTakeProfitMarket futures.OrderType = "TAKE_PROFIT_MARKET"
 	futuresOrderTypeStopMarket       futures.OrderType = "STOP_MARKET"
 )
@@ -927,7 +930,7 @@ func UpdateCoinByWs(systemConfig *models.Config, retryNum int64) {
 		var lastAlertAt atomic.Int64
 		// futures.WebsocketKeepalive = true
 
-		doneC, _, err := wsFuturesAllMarketTickerServe(func(event futures.WsAllMarketTickerEvent) {
+		doneC, wsStopC, err := wsFuturesAllMarketTickerServe(func(event futures.WsAllMarketTickerEvent) {
 			lastRecvAt.Store(time.Now().UnixMilli())
 			lastAlertAt.Store(0)
 			if systemConfig.WsFuturesEnable == 1 {
@@ -975,7 +978,7 @@ func UpdateCoinByWs(systemConfig *models.Config, retryNum int64) {
 		}
 
 		lastRecvAt.Store(time.Now().UnixMilli())
-		go watchFuturesWsNoData(systemConfig, &lastRecvAt, &lastAlertAt, monitorStopC)
+		go watchFuturesWsNoData(systemConfig, &lastRecvAt, &lastAlertAt, monitorStopC, wsStopC)
 
 		<-doneC
 		close(monitorStopC)
@@ -1011,9 +1014,11 @@ func publishFuturesPriceTick(ticker *futures.WsMarketTickerEvent) {
 	))
 }
 
-func watchFuturesWsNoData(systemConfig *models.Config, lastRecvAt *atomic.Int64, lastAlertAt *atomic.Int64, stopC <-chan struct{}) {
+func watchFuturesWsNoData(systemConfig *models.Config, lastRecvAt *atomic.Int64, lastAlertAt *atomic.Int64, stopC <-chan struct{}, wsStopC chan struct{}) {
 	ticker := time.NewTicker(wsNoDataCheckInterval)
 	defer ticker.Stop()
+
+	reconnectClosed := false
 
 	for {
 		select {
@@ -1026,6 +1031,25 @@ func watchFuturesWsNoData(systemConfig *models.Config, lastRecvAt *atomic.Int64,
 
 			nowMs := time.Now().UnixMilli()
 			lastRecvMs := lastRecvAt.Load()
+
+			// 静默超过重连阈值: 主动关闭连接(僵尸连接自愈), doneC 随即关闭, 由外层循环重连
+			if lastRecvMs > 0 && nowMs-lastRecvMs >= wsNoDataReconnectThreshold.Milliseconds() {
+				if !reconnectClosed {
+					reconnectClosed = true
+					noDataMinutes := float64(nowMs-lastRecvMs) / float64(time.Minute/time.Millisecond)
+					logs.Error("futures ws no data for", noDataMinutes, "minutes, closing zombie connection to force reconnect")
+					agentevent.DefaultBus().Publish(agentevent.NewWsHealth(
+						"binance_ws_all_market_ticker", "reconnect", time.Now().UnixMilli(), noDataMinutes,
+					))
+					select {
+					case <-wsStopC:
+					default:
+						close(wsStopC)
+					}
+				}
+				continue
+			}
+
 			if lastRecvMs <= 0 || nowMs-lastRecvMs < wsNoDataAlertThreshold.Milliseconds() {
 				continue
 			}
@@ -1054,8 +1078,8 @@ func sendFuturesWsNoDataAlert(noDataMinutes float64) {
 	content := fmt.Sprintf(`
 ## FuturesWS 无数据告警
 #### 超过 %.1f 分钟未收到任何数据包
-#### 告警阈值：2 分钟
-#### 告警频率：5 分钟一次`, noDataMinutes)
+#### 告警阈值：3 分钟
+#### 告警频率：10 分钟一次`, noDataMinutes)
 
 	switch p := alertPusher.(type) {
 	case notify.DingDing:
