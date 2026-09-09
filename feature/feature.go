@@ -447,6 +447,11 @@ func StartTrade(systemConfig *models.Config) {
 				buyPrice = utils.GetTradePrecision(buyPrice, tickSize)   // 合理精度的价格
 				quantity := (usdt_float64 / buyPrice) * leverage_float64 // 购买数量
 				quantity = utils.GetTradePrecision(quantity, stepSize)   // 合理精度的价格
+				if quantity <= 0 {
+					// notional is below one stepSize after rounding, the order would be rejected with -4003
+					logs.Info("%s:open quantity <= 0 after precision (usdt=%v, leverage=%v, price=%v), skip", symbol, usdt_float64, leverage_float64, buyPrice)
+					continue
+				}
 
 				UpdateSymbolTradeInfo(coin) // 更新倍率和仓位模式
 
@@ -518,6 +523,11 @@ func StartTrade(systemConfig *models.Config) {
 				sellPrice = utils.GetTradePrecision(sellPrice, tickSize)  // 合理精度的价格
 				quantity := (usdt_float64 / sellPrice) * leverage_float64 // 购买数量
 				quantity = utils.GetTradePrecision(quantity, stepSize)    // 合理精度的价格
+				if quantity <= 0 {
+					// notional is below one stepSize after rounding, the order would be rejected with -4003
+					logs.Info("%s:open quantity <= 0 after precision (usdt=%v, leverage=%v, price=%v), skip", symbol, usdt_float64, leverage_float64, sellPrice)
+					continue
+				}
 
 				UpdateSymbolTradeInfo(coin) // 更新倍率和仓位模式
 
