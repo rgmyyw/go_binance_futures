@@ -154,6 +154,10 @@ func BaseCheckCanLongOrShort() (canLong bool, canShort bool) {
 	if err != nil {
 		return false, false
 	}
+	if len(coins) == 0 {
+		// no symbols data, skip the one-side market check
+		return true, true
+	}
 	canLong, canShort = true, true
 	riseCount, fallCount := 0, 0
 	btcPercentChange := 0.0
@@ -167,20 +171,22 @@ func BaseCheckCanLongOrShort() (canLong bool, canShort bool) {
 			btcPercentChange = coin.PercentChange
 		}
 	}
+	risePercent := float64(riseCount) / float64(len(coins)) * 100
+	fallPercent := float64(fallCount) / float64(len(coins)) * 100
 	// logs.Info(riseCount, fallCount, btcPercentChange, len(coins))
-	if riseCount/len(coins) > 75 {
+	if risePercent > 75 {
 		// 都在涨，不要做空
 		canShort = false
 	}
-	if fallCount/len(coins) > 75 {
+	if fallPercent > 75 {
 		// 都在跌，不要做多
 		canLong = false
 	}
-	if riseCount/len(coins) > 60 && btcPercentChange > 5 {
+	if risePercent > 60 && btcPercentChange > 5 {
 		// 60% 的币种都在涨，btc 涨幅大于 5，不要做空
 		canShort = false
 	}
-	if fallCount/len(coins) < 60 && btcPercentChange < -5 {
+	if fallPercent > 60 && btcPercentChange < -5 {
 		// 60% 的币种都在跌，btc 跌幅大于 5，不要做多
 		canLong = false
 	}
