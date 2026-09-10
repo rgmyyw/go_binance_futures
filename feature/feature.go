@@ -120,7 +120,7 @@ func StartTrade(systemConfig *models.Config) {
 		markPrice_float64, _ := strconv.ParseFloat(position.MarkPrice, 64)
 		nowProfit := utils.FuturesLeveragedROI(unRealizedProfit, positionAmtFloatAbs, markPrice_float64, position.Leverage) // 当前收益率(正为盈利，负为亏损)
 
-		if nowProfit < -0.1 {
+		if nowProfit < -10 { // 亏损超过 10% ROI 的仓位计入亏损数
 			lossCount += 1
 		}
 
@@ -441,7 +441,7 @@ func StartTrade(systemConfig *models.Config) {
 			}
 		}
 
-		if systemConfig.FutureAllowLong == 1 && hasPositionLong == false && hasBuyOrderLong == false && openResult.CanLong {
+		if systemConfig.FutureAllowLong == 1 && hasPositionLong == false && hasBuyOrderLong == false && openResult.CanLong && !openOnCooldown(symbol, positionSideLong) {
 			buyPrice, _, err := binance.GetDepthAvgPrice(symbol, 5) // 平均买价
 			if err == nil {
 				buyPrice = utils.GetTradePrecision(buyPrice, tickSize)   // 合理精度的价格
@@ -472,6 +472,7 @@ func StartTrade(systemConfig *models.Config) {
 							Status:       "success",
 						})
 					} else {
+						markOpenFail(symbol, positionSideLong)
 						pusher.SetModuleName("futures").FuturesOpenOrder(notify.FuturesOrderParams{
 							Title:        lang.Lang("futures.open_notice_title"),
 							Symbol:       symbol,
@@ -500,6 +501,7 @@ func StartTrade(systemConfig *models.Config) {
 							Status:       "success",
 						})
 					} else {
+						markOpenFail(symbol, positionSideLong)
 						pusher.SetModuleName("futures").FuturesOpenOrder(notify.FuturesOrderParams{
 							Title:        lang.Lang("futures.open_notice_title"),
 							Symbol:       symbol,
@@ -516,7 +518,7 @@ func StartTrade(systemConfig *models.Config) {
 				isOpen = true
 			}
 		}
-		if systemConfig.FutureAllowShort == 1 && hasPositionShort == false && hasBuyOrderShort == false && openResult.CanShort {
+		if systemConfig.FutureAllowShort == 1 && hasPositionShort == false && hasBuyOrderShort == false && openResult.CanShort && !openOnCooldown(symbol, positionSideShort) {
 
 			_, sellPrice, err := binance.GetDepthAvgPrice(symbol, 5) // 平均卖价
 			if err == nil {
@@ -548,6 +550,7 @@ func StartTrade(systemConfig *models.Config) {
 							Status:       "success",
 						})
 					} else {
+						markOpenFail(symbol, positionSideShort)
 						pusher.SetModuleName("futures").FuturesOpenOrder(notify.FuturesOrderParams{
 							Title:        lang.Lang("futures.open_notice_title"),
 							Symbol:       symbol,
@@ -576,6 +579,7 @@ func StartTrade(systemConfig *models.Config) {
 							Status:       "success",
 						})
 					} else {
+						markOpenFail(symbol, positionSideShort)
 						pusher.SetModuleName("futures").FuturesOpenOrder(notify.FuturesOrderParams{
 							Title:        lang.Lang("futures.open_notice_title"),
 							Symbol:       symbol,
