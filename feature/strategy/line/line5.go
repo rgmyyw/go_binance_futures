@@ -75,8 +75,8 @@ func (TradeLine5 TradeLine5) CanOrderComplete(closeParams strategy.CloseParams) 
 func (TradeLine5 TradeLine5) AutoStopOrder(closeParams strategy.CloseParams) (closeResult strategy.CloseResult) {
 	position := closeParams.Position // 当前仓位
 	closeResult.Complete = false
-
-	if autoStopNeutralROI(closeParams.NowProfit) {
+	if closeParams.NowProfit > 3 || closeParams.NowProfit < -3 {
+		// 已超出 ±3% 区间, 交给常规止盈止损逻辑
 		closeResult.Complete = false
 		return closeResult
 	}

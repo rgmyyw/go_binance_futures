@@ -84,8 +84,8 @@ func (TradeLine4 TradeLine4) CanOrderComplete(closeParams strategy.CloseParams) 
 func (TradeLine4 TradeLine4) AutoStopOrder(closeParams strategy.CloseParams) (closeResult strategy.CloseResult) {
 	position := closeParams.Position // 当前仓位
 	closeResult.Complete = false
-
-	if autoStopNeutralROI(closeParams.NowProfit) {
+	if closeParams.NowProfit > 3 || closeParams.NowProfit < -3 {
+		// 已超出 ±3% 区间, 交给常规止盈止损逻辑
 		closeResult.Complete = false
 		return closeResult
 	}
@@ -121,9 +121,9 @@ func (TradeLine4 TradeLine4) checkLongLine(klines []*futures.Kline) bool {
 	lineData := normalizationLineData(klines) // 24条线
 	minIndex := lineData.MinIndex
 	line := lineData.Line
-	if minIndex >= 1 && minIndex <= 11 {
-		linePoint := line[minIndex]                                // 最低的那个line
-		underLength := math.Abs(linePoint.Close - linePoint.Low)   // 下影线长度
+	if minIndex >= 1 && minIndex <= 11 && minIndex+8 <= len(line) {
+		linePoint := line[minIndex] // 最低的那个line
+		underLength := math.Abs(linePoint.Close - linePoint.Low) // 下影线长度
 		entityLength := math.Abs(linePoint.Open - linePoint.Close) // 实体长度
 		if getRightLine(line[minIndex:minIndex+8], "SHORT") &&     // 最低点到最低点+8个line里面至少6个是红线
 			linePoint.Position == "SHORT" && // 最低点的line是跌
@@ -138,9 +138,9 @@ func (TradeLine4 TradeLine4) checkShortLine(klines []*futures.Kline) bool {
 	lineData := normalizationLineData(klines) // 24条线
 	maxIndex := lineData.MaxIndex
 	line := lineData.Line
-	if maxIndex >= 1 && maxIndex <= 11 {
-		linePoint := line[maxIndex]                                // 最高的那个line
-		upperLength := math.Abs(linePoint.High - linePoint.Close)  // 上影线长度
+	if maxIndex >= 1 && maxIndex <= 11 && maxIndex+8 <= len(line) {
+		linePoint := line[maxIndex] // 最高的那个line
+		upperLength := math.Abs(linePoint.High - linePoint.Close) // 上影线长度
 		entityLength := math.Abs(linePoint.Open - linePoint.Close) // 实体长度
 		if getRightLine(line[maxIndex:maxIndex+8], "LONG") &&      // 最低点到最低点+8个line里面至少6个是绿线
 			linePoint.Position == "LONG" && // 最低点的line是涨
