@@ -2,7 +2,6 @@ package notify
 
 import (
 	"go_binance_futures/models"
-	"fmt"
 	"regexp"
 	"strings"
 	"sync"
