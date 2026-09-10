@@ -41,6 +41,10 @@ func (TradeLine3 TradeLine3) GetCanLongOrShort(openParams strategy.OpenParams) (
 	lineData := normalizationLineData(kline_1) // 归一化处理数据
 
 	rsi1, _ := CalculateRSI(close1, rsi_period1) // 获取 rsi
+	if len(rsi1) < 1 {
+		// 开盘时间不足, K线数量少于指标周期
+		return openResult
+	}
 
 	if ((KdjSimple(ema1, ema2, 3) && rsi1[0] > 40) || (lineData.Line[0].Position == "LONG" && rsi1[0] < 18)) &&
 		TradeLine3.checkLongLine(lineData) {
@@ -88,7 +92,8 @@ func (TradeLine3 TradeLine3) AutoStopOrder(closeParams strategy.CloseParams) (cl
 	position := closeParams.Position // 当前仓位
 	closeResult.Complete = false
 
-	if closeParams.NowProfit < 3 || closeParams.NowProfit > -3 {
+	if closeParams.NowProfit > 3 || closeParams.NowProfit < -3 {
+		// 已超出 ±3% 区间, 交给常规止盈止损逻辑
 		closeResult.Complete = false
 		return closeResult
 	}

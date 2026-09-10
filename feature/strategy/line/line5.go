@@ -76,7 +76,7 @@ func (TradeLine5 TradeLine5) AutoStopOrder(closeParams strategy.CloseParams) (cl
 	position := closeParams.Position // 当前仓位
 	closeResult.Complete = false
 	
-	if closeParams.NowProfit < 3 || closeParams.NowProfit > -3 {
+	if closeParams.NowProfit > 3 || closeParams.NowProfit < -3 {
 		closeResult.Complete = false
 		return closeResult
 	}
