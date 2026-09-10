@@ -9,6 +9,7 @@ import (
 	"go_binance_futures/webnotification"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/beego/beego/v2/core/config"
 	"github.com/beego/beego/v2/core/logs"
@@ -137,6 +138,9 @@ func (pusher Slack) TestPusher() {
 }
 
 func (pusher Slack) FuturesOpenOrder(params FuturesOrderParams) {
+	if params.Status == "fail" && !ShouldSendFailNotify(FailNotifyKey("futures_open", params), 10*time.Minute) {
+		return
+	}
 	text := `
 >%s
 >{futures.side}：%s
@@ -165,6 +169,9 @@ func (pusher Slack) FuturesOpenOrder(params FuturesOrderParams) {
 }
 
 func (pusher Slack) FuturesCloseOrder(params FuturesOrderParams) {
+	if params.Status == "fail" && !ShouldSendFailNotify(FailNotifyKey("futures_close", params), 10*time.Minute) {
+		return
+	}
 	text := `
 >%s
 >{futures.side}：%s
