@@ -74,6 +74,26 @@ func getNowUserData() {
 			o.Update(&positionModel)
 		}
 	}
+
+	// remove local position rows that no longer exist on the exchange,
+	// otherwise the trade loop keeps closing a ghost position and gets -2022
+	livePositions := map[string]bool{}
+	for _, position := range allPositions {
+		amt, _ := strconv.ParseFloat(position.PositionAmt, 64)
+		if math.Abs(amt) < 0.0000001 {
+			continue // 没有持仓的
+		}
+		livePositions[position.Symbol+"|"+position.PositionSide] = true
+	}
+	var localPositions []models.FuturesPosition
+	if cnt, _ := o.QueryTable("futures_positions").All(&localPositions); cnt > 0 {
+		for _, lp := range localPositions {
+			if !livePositions[lp.Symbol+"|"+lp.Side] {
+				logs.Info("position %s %s not found on exchange, remove stale local record", lp.Symbol, lp.Side)
+				o.Delete(&lp)
+			}
+		}
+	}
 	
 	// open orders
 	allOpenOrders, err := binance.GetOpenOrder()
