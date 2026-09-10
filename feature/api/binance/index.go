@@ -613,6 +613,81 @@ func GetExchangeInfo() (res *futures.ExchangeInfo, err error) {
 	return res, err
 }
 
+// 挂止盈单
+// @see https://binance-docs.github.io/apidocs/futures/cn/#trade-3
+// @returns /doc/order.js
+func OrderTakeProfit(symbol string, stopPrice float64, side futures.SideType, positionSide futures.PositionSideType) (order *futures.CreateOrderResponse, err error) {
+	order, err = futuresClient.NewCreateOrderService().
+		Symbol(symbol).
+		Side(side).
+		PositionSide(positionSide).
+		Type(futuresOrderTypeTakeProfitMarket).                 // 止盈市价单
+		StopPrice(strconv.FormatFloat(stopPrice, 'f', -1, 64)). // 触发价格
+		ClosePosition(true).                                    // 是否市价全平(和quantity参数互斥)
+		// Quantity(strconv.FormatFloat(quantity, 'f', -1, 64)).
+		// TimeInForce(binance.TimeInForceTypeGTC).
+		Do(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	return order, err
+}
+
+// 挂单止损
+// @see https://binance-docs.github.io/apidocs/futures/cn/#trade-3
+// @returns /doc/order.js
+func OrderStopLoss(symbol string, stopPrice float64, side futures.SideType, positionSide futures.PositionSideType) (order *futures.CreateOrderResponse, err error) {
+	order, err = futuresClient.NewCreateOrderService().
+		Symbol(symbol).
+		Side(side).
+		PositionSide(positionSide).
+		Type(futuresOrderTypeStopMarket).                       // 止损限价单
+		StopPrice(strconv.FormatFloat(stopPrice, 'f', -1, 64)). // 触发价格
+		ClosePosition(true).                                    // 是否市价全平(和quantity参数互斥)
+		// Quantity(strconv.FormatFloat(quantity, 'f', -1, 64)).
+		// TimeInForce(binance.TimeInForceTypeGTC).
+		Do(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	return order, err
+}
+
+// 挂单止损(Algo 条件单): 币安已将条件单迁移到 Algo Order API,
+// 普通下单端点发 STOP_MARKET 会报 -4120
+func OrderStopLossAlgo(symbol string, stopPrice float64, side futures.SideType, positionSide futures.PositionSideType) (order *futures.CreateAlgoOrderResp, err error) {
+	order, err = futuresClient.NewCreateAlgoOrderService().
+		AlgoType(futures.OrderAlgoTypeConditional).
+		Symbol(symbol).
+		Side(side).
+		Type(futures.AlgoOrderTypeStopMarket).
+		PositionSide(positionSide).
+		TriggerPrice(strconv.FormatFloat(stopPrice, 'f', -1, 64)).
+		ClosePosition(true).
+		Do(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	return order, err
+}
+
+// 查询 Algo 挂单(可传 symbol, 不传为全部)
+func GetOpenAlgoOrders(symbols ...string) (res []futures.GetAlgoOrderResp, err error) {
+	service := futuresClient.NewListOpenAlgoOrdersService()
+	if len(symbols) > 0 {
+		service = service.Symbol(symbols[0])
+	}
+	return service.Do(context.Background())
+}
+
+// 撤销 Algo 挂单
+func CancelAlgoOrder(algoId int64) (res *futures.CancelAlgoOrderResp, err error) {
+	return futuresClient.NewCancelAlgoOrderService().AlgoID(algoId).Do(context.Background())
+}
+
 type FundingRateParams struct {
 	Symbol    string
 	StartTime int64
