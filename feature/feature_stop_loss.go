@@ -74,6 +74,7 @@ func SyncStopOrders() {
 	}
 	openOrders, err := binance.GetOpenOrder()
 	if err != nil {
+		logs.Error("SyncStopOrders get open orders failed: %s", err.Error())
 		return
 	}
 	liveSymbols := map[string]bool{}
