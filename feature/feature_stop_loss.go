@@ -57,7 +57,7 @@ func CancelSymbolStopOrders(symbol string) {
 		return
 	}
 	for _, order := range orders {
-		if order.Type != futures.OrderTypeStopMarket {
+		if order.Type != "STOP_MARKET" {
 			continue
 		}
 		if _, err := binance.CancelOrder(symbol, order.OrderID); err == nil {
@@ -85,7 +85,7 @@ func SyncStopOrders() {
 		liveSymbols[p.Symbol] = true
 	}
 	for _, order := range openOrders {
-		if order.Type != futures.OrderTypeStopMarket {
+		if order.Type != "STOP_MARKET" {
 			continue
 		}
 		if !liveSymbols[order.Symbol] {
@@ -117,7 +117,7 @@ func SyncStopOrders() {
 
 func stopOrderExists(orders []*futures.Order, symbol string, side futures.PositionSideType) bool {
 	for _, order := range orders {
-		if order.Type == futures.OrderTypeStopMarket && order.Symbol == symbol && order.PositionSide == side {
+		if order.Type == "STOP_MARKET" && order.Symbol == symbol && order.PositionSide == side {
 			return true
 		}
 	}
