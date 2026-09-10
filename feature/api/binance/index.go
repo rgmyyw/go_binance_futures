@@ -658,6 +658,39 @@ func OrderStopLoss(symbol string, stopPrice float64, side futures.SideType, posi
 	return order, err
 }
 
+// 挂单止损(Algo 条件单): 币安已将条件单迁移到 Algo Order API,
+// 普通下单端点发 STOP_MARKET 会报 -4120
+func OrderStopLossAlgo(symbol string, stopPrice float64, side futures.SideType, positionSide futures.PositionSideType) (order *futures.CreateAlgoOrderResp, err error) {
+	order, err = futuresClient.NewCreateAlgoOrderService().
+		AlgoType(futures.OrderAlgoTypeConditional).
+		Symbol(symbol).
+		Side(side).
+		Type(futures.AlgoOrderTypeStopMarket).
+		PositionSide(positionSide).
+		TriggerPrice(strconv.FormatFloat(stopPrice, 'f', -1, 64)).
+		ClosePosition(true).
+		Do(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	return order, err
+}
+
+// 查询 Algo 挂单(可传 symbol, 不传为全部)
+func GetOpenAlgoOrders(symbols ...string) (res []futures.GetAlgoOrderResp, err error) {
+	service := futuresClient.NewListOpenAlgoOrdersService()
+	if len(symbols) > 0 {
+		service = service.Symbol(symbols[0])
+	}
+	return service.Do(context.Background())
+}
+
+// 撤销 Algo 挂单
+func CancelAlgoOrder(algoId int64) (res *futures.CancelAlgoOrderResp, err error) {
+	return futuresClient.NewCancelAlgoOrderService().AlgoID(algoId).Do(context.Background())
+}
+
 type FundingRateParams struct {
 	Symbol    string
 	StartTime int64

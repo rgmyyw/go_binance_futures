@@ -43,7 +43,7 @@ func PlaceSymbolStopLoss(coin *models.Symbols, entryText string, leverage int64,
 	if stopPrice <= 0 {
 		return
 	}
-	if _, err := binance.OrderStopLoss(coin.Symbol, stopPrice, side, positionSide); err != nil {
+	if _, err := binance.OrderStopLossAlgo(coin.Symbol, stopPrice, side, positionSide); err != nil {
 		logs.Error("%s:place exchange stop loss(%s@%v) failed: %s", coin.Symbol, positionSide, stopPrice, err.Error())
 		return
 	}
@@ -52,15 +52,16 @@ func PlaceSymbolStopLoss(coin *models.Symbols, entryText string, leverage int64,
 
 // CancelSymbolStopOrders 仓位平掉后撤销该币种残留的止损单
 func CancelSymbolStopOrders(symbol string) {
-	orders, err := binance.GetOpenOrder(symbol)
+	orders, err := binance.GetOpenAlgoOrders(symbol)
 	if err != nil {
+		logs.Error("%s:cancel exchange stop loss failed: %s", symbol, err.Error())
 		return
 	}
 	for _, order := range orders {
-		if order.Type != "STOP_MARKET" {
+		if order.OrderType != futures.AlgoOrderTypeStopMarket {
 			continue
 		}
-		if _, err := binance.CancelOrder(symbol, order.OrderID); err == nil {
+		if _, err := binance.CancelAlgoOrder(order.AlgoId); err == nil {
 			logs.Info("%s:exchange stop loss cancelled", symbol)
 		}
 	}
@@ -72,7 +73,7 @@ func SyncStopOrders() {
 	if _, err := orm.NewOrm().QueryTable("futures_positions").All(&positions); err != nil {
 		return
 	}
-	openOrders, err := binance.GetOpenOrder()
+	openOrders, err := binance.GetOpenAlgoOrders()
 	if err != nil {
 		logs.Error("SyncStopOrders get open orders failed: %s", err.Error())
 		return
@@ -86,11 +87,11 @@ func SyncStopOrders() {
 		liveSymbols[p.Symbol] = true
 	}
 	for _, order := range openOrders {
-		if order.Type != "STOP_MARKET" {
+		if order.OrderType != futures.AlgoOrderTypeStopMarket {
 			continue
 		}
 		if !liveSymbols[order.Symbol] {
-			if _, err := binance.CancelOrder(order.Symbol, order.OrderID); err == nil {
+			if _, err := binance.CancelAlgoOrder(order.AlgoId); err == nil {
 				logs.Info("%s:stale exchange stop loss cancelled", order.Symbol)
 			}
 		}
@@ -116,9 +117,9 @@ func SyncStopOrders() {
 	}
 }
 
-func stopOrderExists(orders []*futures.Order, symbol string, side futures.PositionSideType) bool {
+func stopOrderExists(orders []futures.GetAlgoOrderResp, symbol string, side futures.PositionSideType) bool {
 	for _, order := range orders {
-		if order.Type == "STOP_MARKET" && order.Symbol == symbol && order.PositionSide == side {
+		if order.OrderType == futures.AlgoOrderTypeStopMarket && order.Symbol == symbol && order.PositionSide == side {
 			return true
 		}
 	}
