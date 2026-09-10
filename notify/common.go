@@ -2,8 +2,10 @@ package notify
 
 import (
 	"go_binance_futures/models"
+	"fmt"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/beego/beego/v2/client/orm"
@@ -75,4 +77,23 @@ func GetNotifyConfig(pusher Pusher) (notifyConfig models.NotifyConfig) {
 
 func IsModulePushEnabled(notifyConfig models.NotifyConfig) bool {
 	return notifyConfig.ID == 0 || notifyConfig.Enable == 1
+}
+
+// 失败通知去重: 同一失败在冷却时间内只推送一次, 冷却结束后再发一次提醒
+var failNotifyLast sync.Map
+
+// ShouldSendFailNotify returns true if a failure notification with the same key
+// has not been sent within the cooldown window; sending also records the timestamp.
+func ShouldSendFailNotify(key string, cooldown time.Duration) bool {
+	now := time.Now().Unix()
+	if v, ok := failNotifyLast.Load(key); ok && now-v.(int64) < int64(cooldown.Seconds()) {
+		return false
+	}
+	failNotifyLast.Store(key, now)
+	return true
+}
+
+// FailNotifyKey builds the dedup key for a failed order notification.
+func FailNotifyKey(scope string, params FuturesOrderParams) string {
+	return scope + "|" + params.Symbol + "|" + params.PositionSide + "|" + params.Remarks
 }

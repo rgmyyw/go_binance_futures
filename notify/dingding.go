@@ -150,6 +150,9 @@ func (pusher DingDing) TestPusher() {
 }
 
 func (pusher DingDing) FuturesOpenOrder(params FuturesOrderParams) {
+	if params.Status == "fail" && !ShouldSendFailNotify(FailNotifyKey("futures_open", params), 10*time.Minute) {
+		return
+	}
 	text := `
 ## %s
 #### **{futures.side}**：<font color="#008000">%s</font>
@@ -176,6 +179,9 @@ func (pusher DingDing) FuturesOpenOrder(params FuturesOrderParams) {
 }
 
 func (pusher DingDing) FuturesCloseOrder(params FuturesOrderParams) {
+	if params.Status == "fail" && !ShouldSendFailNotify(FailNotifyKey("futures_close", params), 10*time.Minute) {
+		return
+	}
 	text := `
 ## %s
 #### **{futures.side}**：<font color="#008000">%s</font>
