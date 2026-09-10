@@ -215,6 +215,7 @@ func StartTrade(systemConfig *models.Config) {
 					if err == nil {
 						// 数据库写入订单
 						insertCloseOrder(position, positionAmtFloatAbs, unRealizedProfit, position.MarkPrice, order.OrderID, systemConfig)
+						go CancelSymbolStopOrders(position.Symbol)
 
 						markPrice, _ := strconv.ParseFloat(position.MarkPrice, 64)
 						pusher.SetModuleName("futures").FuturesCloseOrder(notify.FuturesOrderParams{
@@ -249,6 +250,7 @@ func StartTrade(systemConfig *models.Config) {
 					if err == nil {
 						// 数据库写入订单
 						insertCloseOrder(position, positionAmtFloatAbs, unRealizedProfit, position.MarkPrice, order.OrderID, systemConfig)
+						go CancelSymbolStopOrders(position.Symbol)
 
 						markPrice, _ := strconv.ParseFloat(position.MarkPrice, 64)
 						pusher.SetModuleName("futures").FuturesCloseOrder(notify.FuturesOrderParams{
@@ -293,6 +295,7 @@ func StartTrade(systemConfig *models.Config) {
 					if err == nil {
 						// 数据库写入订单
 						insertCloseOrder(position, positionAmtFloatAbs, unRealizedProfit, position.MarkPrice, order.OrderID, systemConfig)
+						go CancelSymbolStopOrders(position.Symbol)
 
 						markPrice, _ := strconv.ParseFloat(position.MarkPrice, 64)
 						pusher.SetModuleName("futures").FuturesCloseOrder(notify.FuturesOrderParams{
@@ -327,6 +330,7 @@ func StartTrade(systemConfig *models.Config) {
 					if err == nil {
 						// 数据库写入订单
 						insertCloseOrder(position, positionAmtFloatAbs, unRealizedProfit, position.MarkPrice, order.OrderID, systemConfig)
+						go CancelSymbolStopOrders(position.Symbol)
 
 						markPrice, _ := strconv.ParseFloat(position.MarkPrice, 64)
 						pusher.SetModuleName("futures").FuturesCloseOrder(notify.FuturesOrderParams{
@@ -461,6 +465,7 @@ func StartTrade(systemConfig *models.Config) {
 						// 数据库写入订单
 						buyPrice := utils.GetTradePrecision(buyPrice*1.0012, coin.TickSize) // 价格上浮 0.1%(原因是市价买入通常会比当前价格高)
 						insertOpenOrder(symbol, quantity, strconv.FormatFloat(buyPrice, 'f', -1, 64), "LONG", int64(leverage_float64), order.OrderID)
+						PlaceSymbolStopLoss(coin, strconv.FormatFloat(buyPrice, 'f', -1, 64), int64(leverage_float64), futures.PositionSideTypeLong)
 						pusher.SetModuleName("futures").FuturesOpenOrder(notify.FuturesOrderParams{
 							Title:        lang.Lang("futures.open_notice_title"),
 							Symbol:       symbol,
@@ -490,6 +495,7 @@ func StartTrade(systemConfig *models.Config) {
 					if err == nil {
 						// 数据库写入订单(可能没有买入)
 						insertOpenOrder(symbol, quantity, strconv.FormatFloat(buyPrice, 'f', -1, 64), "LONG", int64(leverage_float64), order.OrderID)
+						PlaceSymbolStopLoss(coin, strconv.FormatFloat(buyPrice, 'f', -1, 64), int64(leverage_float64), futures.PositionSideTypeLong)
 						pusher.SetModuleName("futures").FuturesOpenOrder(notify.FuturesOrderParams{
 							Title:        lang.Lang("futures.open_notice_title"),
 							Symbol:       symbol,
@@ -539,6 +545,7 @@ func StartTrade(systemConfig *models.Config) {
 						// 数据库写入订单
 						sellPrice := utils.GetTradePrecision(sellPrice*0.9988, coin.TickSize) // 价格下调 0.12%(原因是市价买入通常会比当前价格高)
 						insertOpenOrder(symbol, quantity, strconv.FormatFloat(sellPrice, 'f', -1, 64), "SHORT", int64(leverage_float64), order.OrderID)
+						PlaceSymbolStopLoss(coin, strconv.FormatFloat(sellPrice, 'f', -1, 64), int64(leverage_float64), futures.PositionSideTypeShort)
 						pusher.SetModuleName("futures").FuturesOpenOrder(notify.FuturesOrderParams{
 							Title:        lang.Lang("futures.open_notice_title"),
 							Symbol:       symbol,
@@ -568,6 +575,7 @@ func StartTrade(systemConfig *models.Config) {
 					if err == nil {
 						// 数据库写入订单(可能没有买入)
 						insertOpenOrder(symbol, quantity, strconv.FormatFloat(sellPrice, 'f', -1, 64), "SHORT", int64(leverage_float64), order.OrderID)
+						PlaceSymbolStopLoss(coin, strconv.FormatFloat(sellPrice, 'f', -1, 64), int64(leverage_float64), futures.PositionSideTypeShort)
 						pusher.SetModuleName("futures").FuturesOpenOrder(notify.FuturesOrderParams{
 							Title:        lang.Lang("futures.open_notice_title"),
 							Symbol:       symbol,
