@@ -15,6 +15,7 @@ import (
 func SyncUserData() {
 	deleteOldUserData()
 	getNowUserData()
+	go SyncStopOrders() // 对账交易所原生止损单
 	go func() {
 		binance.WsUserData()
 	}()
@@ -23,6 +24,7 @@ func SyncUserData() {
 		for {
 			time.Sleep(time.Minute * 30) // 30分钟间隔
 			getNowUserData()
+			SyncStopOrders()
 		}
 	}()
 }
