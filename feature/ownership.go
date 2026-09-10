@@ -162,7 +162,7 @@ func accountTradeRiskCounts(positions []types.FuturesPosition) (positionCount, l
 		positionCount++
 		unrealized, _ := strconv.ParseFloat(position.UnrealizedProfit, 64)
 		mark, _ := strconv.ParseFloat(position.MarkPrice, 64)
-		if utils.FuturesLeveragedROI(unrealized, qty, mark, position.Leverage) < -0.1 {
+		if utils.FuturesLeveragedROI(unrealized, qty, mark, position.Leverage) < -10 { // 亏损超过 10% ROI 的仓位计入亏损数
 			lossCount++
 		}
 	}
