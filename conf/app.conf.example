@@ -51,6 +51,11 @@ conn_max_idle_time_seconds = 60
 # 使用 ws 管理仓位和订单，代替 http api，可有效避免 binance api 超限，需要本地网络稳定
 futures_user_data = 1
 
+[trade]
+# 合约主循环轮询间隔(秒), 最小 2, 默认 10
+# 每轮约 20 币 × 2 次 K 线 ≈ 60~80 权重, 10s 一轮约 500~960 权重/min, 需低于币安 2400/min 限制, 否则 -1003 封 IP
+interval_second = 10
+
 [web]
 # web端口
 port = 3333

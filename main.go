@@ -343,9 +343,15 @@ func main() {
 	}()
 
 	// 自动合约交易
+	// 轮询间隔可配置(trade::interval_second), 默认 10s
+	// 每轮约 20 币 × 2 次 K 线 ≈ 60~80 权重, 10s 一轮 ≈ 500~960 权重/min, 需低于币安 2400/min 限制, 否则 -1003 封 IP
+	tradeInterval, err := config.Int("trade::interval_second")
+	if err != nil || tradeInterval < 2 {
+		tradeInterval = 10
+	}
 	loopRun(func() {
 		feature.StartTrade(&SystemConfig)
-	}, time.Second*2) // 2秒间隔, 1min 中不能超过 2400 权重和
+	}, time.Second*time.Duration(tradeInterval))
 
 	// 30 分钟检查一次所有未平仓的订单, 一次 200 条，此处是兜底行为，处理一些意外情况
 	// 处理 app 上已经平仓的订单，但是系统中没有找到对应的平仓订单
