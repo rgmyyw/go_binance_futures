@@ -4,6 +4,7 @@ import (
 	"go_binance_futures/feature/api/binance"
 	"go_binance_futures/feature/strategy"
 	"go_binance_futures/utils"
+	"fmt"
 	"math"
 	"strconv"
 
@@ -28,31 +29,64 @@ func (TradeLine4 TradeLine4) GetCanLongOrShort(openParams strategy.OpenParams) (
 	kline_6h, err1 := binance.GetKlineData(symbols.Symbol, "6h", 50)
 	kline_1h, err2 := binance.GetKlineData(symbols.Symbol, "2h", 24)
 	if err1 != nil || err2 != nil {
+		openResult.Reason = fmt.Sprintf("no trading strategy conditions passed | K线获取失败(6h:%v, 2h:%v)", err1, err2)
 		return openResult
 	}
 	kline_6h_close := GetLineClosePrices(kline_6h)
-	
+
 	ma6h_3, _ := CalculateSimpleMovingAverage(kline_6h_close, 3) // ma3
 	ma6h_7, _ := CalculateSimpleMovingAverage(kline_6h_close, 7) // ma7
 	rsi6, _ := CalculateRSI(kline_6h_close, 6) // rsi6
 	rsi14, _ := CalculateRSI(kline_6h_close, 14) // rsi14
 	if (rsi6 == nil || rsi14 == nil || len(rsi6) < 2 || len(rsi14) < 2) {
 		// 开盘小于 4.5 天
+		openResult.Reason = "no trading strategy conditions passed | 上市时间短, K线数据不足, 跳过判定"
 		return openResult
 	}
 	baseCanLong, baseCanShort := BaseCheckCanLongOrShort() // 基本盘
 	isRsi := rsi6[0] < 80 && rsi6[0] > 30 && rsi14[0] < 75 && rsi14[0] > 28
-	// logs.Info(symbol, KdjSimple(ma6h_3, ma6h_7, 4), KdjSimple(ma6h_7, ma6h_3, 4), rsi6[1], rsi14[1])
-	if KdjSimple(ma6h_3, ma6h_7, 4) && TradeLine4.checkLongLine(kline_1h) && isRsi && baseCanLong{ // 1天之内发生过金叉, rsi 没有超买
+	longCross := KdjSimple(ma6h_3, ma6h_7, 4) // 1天之内发生过金叉, rsi 没有超买
+	longLine, longLineDbg := TradeLine4.checkLongLine(kline_1h)
+	shortCross := KdjSimple(ma6h_7, ma6h_3, 4)
+	shortLine, shortLineDbg := TradeLine4.checkShortLine(kline_1h)
+
+	if longCross && longLine && isRsi && baseCanLong {
 		// 短线穿越长线金叉
 		openResult.CanLong = true
 		return openResult
 	}
-	if KdjSimple(ma6h_7, ma6h_3, 4) && TradeLine4.checkShortLine(kline_1h)&& isRsi && baseCanShort {
+	if shortCross && shortLine && isRsi && baseCanShort {
 		openResult.CanShort = true
 		return openResult
 	}
+	openResult.Reason = fmt.Sprintf(
+		"no trading strategy conditions passed | 多[金叉%v(%s) 形态%v(%s) 基本盘%v] 空[金叉%v 形态%v(%s) 基本盘%v] RSI6=%.1f RSI14=%.1f",
+		longCross, crossState(ma6h_3, ma6h_7), longLine, longLineDbg, baseCanLong,
+		shortCross, shortLine, shortLineDbg, baseCanShort,
+		rsi6[0], rsi14[0],
+	)
 	return openResult
+}
+
+// ma1(短线)相对 ma2(长线)的交叉状态, 数组第0位为最新
+func crossState(ma1 []float64, ma2 []float64) string {
+	if len(ma1) == 0 || len(ma2) == 0 {
+		return "无数据"
+	}
+	if ma1[0] >= ma2[0] {
+		for i := 1; i < len(ma1) && i < len(ma2); i++ {
+			if ma1[i] < ma2[i] {
+				return fmt.Sprintf("金叉%d根K线前", i)
+			}
+		}
+		return "持续在上"
+	}
+	for i := 1; i < len(ma1) && i < len(ma2); i++ {
+		if ma1[i] >= ma2[i] {
+			return fmt.Sprintf("死叉%d根K线前", i)
+		}
+	}
+	return "持续在下"
 }
 
 // 达到止盈或止损后判断是否可以平仓
@@ -118,36 +152,59 @@ func (TradeLine4 TradeLine4) MarketReversal(symbol string, positionSide string) 
 	return false
 }
 
-func (TradeLine4 TradeLine4) checkLongLine(klines []*futures.Kline) bool {
+// 2h线见底形态: 最近11根内最低点为长下影阴线, 其后8根内至少6根阴线
+// 返回值 dbg 为形态明细, 供日志排查
+func (TradeLine4 TradeLine4) checkLongLine(klines []*futures.Kline) (can bool, dbg string) {
 	lineData := normalizationLineData(klines) // 24条线
 	minIndex := lineData.MinIndex
 	line := lineData.Line
-	if minIndex >= 1 && minIndex <= 11 && minIndex+8 <= len(line) {
-		linePoint := line[minIndex] // 最低的那个line
-		underLength := math.Abs(linePoint.Close - linePoint.Low) // 下影线长度
-		entityLength := math.Abs(linePoint.Open - linePoint.Close) // 实体长度
-		if	getRightLine(line[minIndex:minIndex+8], "SHORT") && // 最低点到最低点+8个line里面至少6个是红线
-			linePoint.Position == "SHORT" && // 最低点的line是跌
-			(underLength / entityLength) > 0.5 { // 下影线长度  实体长度
-				return true
+	if minIndex < 1 || minIndex > 11 || minIndex+8 > len(line) {
+		return false, fmt.Sprintf("低点在第%d根(需1~11)", minIndex)
+	}
+	linePoint := line[minIndex] // 最低的那个line
+	underLength := math.Abs(linePoint.Close - linePoint.Low) // 下影线长度
+	entityLength := math.Abs(linePoint.Open - linePoint.Close) // 实体长度
+	fallCount := 0
+	for _, item := range line[minIndex : minIndex+8] {
+		if item.Position == "SHORT" {
+			fallCount++
 		}
 	}
-	return false
+	pointColor := "阳线"
+	if linePoint.Position == "SHORT" {
+		pointColor = "阴线"
+	}
+	can = getRightLine(line[minIndex:minIndex+8], "SHORT") && // 最低点到最低点+8个line里面至少6个是红线
+		linePoint.Position == "SHORT" && // 最低点的line是跌
+		(underLength / entityLength) > 0.5 // 下影线长度  实体长度
+	dbg = fmt.Sprintf("低点第%d根,%s,影/实%.2f,8根内阴线%d", minIndex, pointColor, underLength/entityLength, fallCount)
+	return can, dbg
 }
 
-func (TradeLine4 TradeLine4) checkShortLine(klines []*futures.Kline) bool {
+// 2h线见顶形态: 最近11根内最高点为长上影阳线, 其后8根内至少6根阳线
+func (TradeLine4 TradeLine4) checkShortLine(klines []*futures.Kline) (can bool, dbg string) {
 	lineData := normalizationLineData(klines) // 24条线
 	maxIndex := lineData.MaxIndex
 	line := lineData.Line
-	if maxIndex >= 1 && maxIndex <= 11 && maxIndex+8 <= len(line) {
-		linePoint := line[maxIndex] // 最高的那个line
-		upperLength := math.Abs(linePoint.High - linePoint.Close) // 上影线长度
-		entityLength := math.Abs(linePoint.Open - linePoint.Close) // 实体长度
-		if	getRightLine(line[maxIndex:maxIndex+8], "LONG") && // 最低点到最低点+8个line里面至少6个是绿线
-			linePoint.Position == "LONG" && // 最低点的line是涨
-			(upperLength / entityLength) > 0.5 { // 上影线长度 > 实体长度
-				return true
+	if maxIndex < 1 || maxIndex > 11 || maxIndex+8 > len(line) {
+		return false, fmt.Sprintf("高点在第%d根(需1~11)", maxIndex)
+	}
+	linePoint := line[maxIndex] // 最高的那个line
+	upperLength := math.Abs(linePoint.High - linePoint.Close) // 上影线长度
+	entityLength := math.Abs(linePoint.Open - linePoint.Close) // 实体长度
+	riseCount := 0
+	for _, item := range line[maxIndex : maxIndex+8] {
+		if item.Position == "LONG" {
+			riseCount++
 		}
 	}
-	return false
+	pointColor := "阳线"
+	if linePoint.Position == "SHORT" {
+		pointColor = "阴线"
+	}
+	can = getRightLine(line[maxIndex:maxIndex+8], "LONG") && // 最高点到最高点+8个line里面至少6个是绿线
+		linePoint.Position == "LONG" && // 最高点的line是涨
+		(upperLength / entityLength) > 0.5 // 上影线长度 > 实体长度
+	dbg = fmt.Sprintf("高点第%d根,%s,影/实%.2f,8根内阳线%d", maxIndex, pointColor, upperLength/entityLength, riseCount)
+	return can, dbg
 }

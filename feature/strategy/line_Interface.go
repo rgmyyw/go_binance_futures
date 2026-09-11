@@ -13,6 +13,7 @@ type OpenParams struct {
 type OpenResult struct {
     CanLong bool
     CanShort bool
+    Reason string // 无法开仓时的原因明细(仅用于日志排查, 可为空)
 }
 
 type CloseParams struct {
