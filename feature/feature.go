@@ -412,7 +412,7 @@ func StartTrade(systemConfig *models.Config) {
 			Symbols: coin,
 		})
 		if !openResult.CanLong && !openResult.CanShort {
-			logs.Info("%s:no trading strategy conditions passed", symbol)
+			logStrategyOnce(symbol, openResult.Reason)
 			continue
 		}
 		hasBuyOrderLong := false  // 此币种开多的单
