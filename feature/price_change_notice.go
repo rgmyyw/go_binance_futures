@@ -39,6 +39,17 @@ type priceChangeSnapshot struct {
 var priceChangeStates sync.Map   // symbol -> *priceChangeEntry
 var priceChangeSnap atomic.Value // priceChangeSnapshot
 
+// pushPriceChangeNotice 可测试接缝: 生产路径走钉钉/邮件推送
+var pushPriceChangeNotice = func(symbol string, price float64, changePct float64) {
+	pusher.SetModuleName("futures").FuturesPriceChangeNotice(notify.FuturesNoticeParams{
+		Title:         " 价格变动提醒",
+		Symbol:        symbol,
+		Price:         price,
+		ChangePercent: changePct,
+		Status:        "success",
+	})
+}
+
 // StartPriceChangeNotice 订阅 ws 价格事件流, 启动价格变动提醒
 func StartPriceChangeNotice() {
 	priceChangeSnap.Store(priceChangeSnapshot{watch: map[string]bool{}})
@@ -86,13 +97,7 @@ func handlePriceChangeTick(ctx context.Context, evt agentevent.Event) error {
 	if changePct < snap.limit && changePct > -snap.limit {
 		return nil
 	}
-	pusher.SetModuleName("futures").FuturesPriceChangeNotice(notify.FuturesNoticeParams{
-		Title:         " 价格变动提醒",
-		Symbol:        symbol,
-		Price:         tick.Price,
-		ChangePercent: changePct,
-		Status:        "success",
-	})
+	pushPriceChangeNotice(symbol, tick.Price, changePct)
 	entry.lastAlertAt = nowMs
 	entry.refPrice = tick.Price
 	return nil
