@@ -10,9 +10,12 @@ import (
 )
 
 // 最近5min交易过的币种订单
+// listOrders 可测试接缝: 生产路径查询币安订单
+var listOrders = binance.GetOrders
+
 func getLimitMinOrder(minute int64) (symbols map[string]bool) {
 	nowTime := time.Now().Unix() * 1000 // 毫秒时间戳
-	orders, _ := binance.GetOrders(binance.ListOrderParams{
+	orders, _ := listOrders(binance.ListOrderParams{
 		StartTime: nowTime - minute * 60 * 1000,
 	})
 	symbols = make(map[string]bool)
