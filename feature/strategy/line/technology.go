@@ -722,8 +722,8 @@ func IsDarkCloudCover(first, second Candle) bool {
 	isSecondBearish := second.Close < second.Open
 	// Second candle opens above the first candle's close
 	opensAboveFirstClose := second.Open > first.Close
-	// Second candle closes inside the body of the first candle
-	closesInsideFirstBody := second.Close < first.Open && second.Close > first.Close*0.5+first.Open*0.5
+	// Second candle closes inside the body of the first candle(标准乌云盖顶: 收在第一根开盘价上方、实体中点下方; 原 first.Open 比较符写反导致永假)
+	closesInsideFirstBody := second.Close > first.Open && second.Close < first.Close*0.5+first.Open*0.5
 
 	return isFirstBullish && isSecondBearish && opensAboveFirstClose && closesInsideFirstBody
 }
