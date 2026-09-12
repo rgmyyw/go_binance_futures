@@ -17,7 +17,7 @@ func TestFuturesLeveragedROI(t *testing.T) {
 		{"数量为0返回0", 3, 0, 100, 3, 0},
 		{"价格为0返回0", 3, 0.3, 0, 3, 0},
 		{"杠杆为0返回0", 3, 0.3, 100, 0, 0},
-		{"1倍杠杆等于价格涨跌比", 1, 1, 100, 1, 100},
+		{"1倍杠杆等于价格涨跌百分比", 1, 1, 100, 1, 1},
 	}
 	for _, c := range cases {
 		if got := FuturesLeveragedROI(c.profit, c.qty, c.price, c.leverage); math.Abs(got-c.want) > 1e-9 {
@@ -59,8 +59,11 @@ func TestIsAscIsDescReverse(t *testing.T) {
 	if !IsDesc([]float64{3, 2, 1}) {
 		t.Error("降序应判定为true")
 	}
-	if !IsDesc([]float64{2, 1}) || IsDesc([]float64{1}) {
-		t.Error("两元素与单元素边界")
+	if !IsDesc([]float64{2, 1}) {
+		t.Error("两元素降序应为true")
+	}
+	if !IsDesc([]float64{1}) || !IsAsc([]float64{1}) {
+		t.Error("单元素应平凡判定为true")
 	}
 	rev := ReverseArray([]float64{1, 2, 3})
 	if rev[0] != 3 || rev[2] != 1 {
