@@ -299,6 +299,8 @@ func main() {
 
 	// 读取最新配置信息
 	loopRun(updateSystemConfig, time.Second*2) // 每 2 秒更新一次系统配置信息
+	// 行情自适应策略切换(仅 line5/line6 之间; market_condition 为自动判定时生效)
+	loopRun(feature.AutoSwitchStrategyByMarket, time.Minute*10)
 	// Agent 周期任务统一由 Scheduler 触发。
 	if err := agentapp.StartDefaultScheduler(context.Background(), func() models.Config { return SystemConfig }); err != nil {
 		logs.Error("start agent scheduler:", err)
