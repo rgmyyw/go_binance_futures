@@ -7,7 +7,6 @@ import (
 	"go_binance_futures/models"
 	"go_binance_futures/types"
 
-	"github.com/adshao/go-binance/v2/futures"
 )
 
 // line1/line2 AutoStopOrder: 无自动止损逻辑, 恒为 false
