@@ -22,7 +22,7 @@ import (
 	"go_binance_futures/utils"
 	"go_binance_futures/webnotification"
 	"os"
-	"runtime/debug"
+	rdebug "runtime/debug"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -533,7 +533,7 @@ func loopRun(callback func(), d time.Duration) {
 					// 单轮任务 panic 不允许击穿进程(否则整个机器人崩溃重启, 期间无风控), 记录后等待下一轮
 					defer func() {
 						if r := recover(); r != nil {
-							logs.Error("loopRun panic: %v\n%s", r, string(debug.Stack()))
+							logs.Error("loopRun panic: %v\n%s", r, string(rdebug.Stack()))
 						}
 					}()
 					callback()
