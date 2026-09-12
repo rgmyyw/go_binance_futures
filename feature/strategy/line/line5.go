@@ -25,7 +25,7 @@ func (TradeLine5 TradeLine5) GetCanLongOrShort(openParams strategy.OpenParams) (
 	openResult.CanShort = false
 	
 	kline_1, err1 := binance.GetKlineData(symbols.Symbol, "1m", 30)
-	if err1 != nil {
+	if err1 != nil || len(kline_1) < 2 {
 		return openResult
 	}
 	if TradeLine5.checkLine(kline_1) {
@@ -64,7 +64,7 @@ func (TradeLine5 TradeLine5) CanOrderComplete(closeParams strategy.CloseParams) 
 	}
 
 	lines, err := binance.GetKlineData(symbols.Symbol, "5m", 2)
-	if err != nil {
+	if err != nil || len(lines) < 2 {
 		closeResult.Complete = true
 		return closeResult
 	}
