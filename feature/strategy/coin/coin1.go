@@ -8,7 +8,8 @@ import (
 type TradeCoin1 struct {
 }
 
-// 策略: 从跌幅榜/涨幅榜各取动量最强的前2个(原为前6随机取2), 最近5min交易过的币不再交易
+// 策略: 从跌幅榜/涨幅榜各取动量最强的前4个(每侧扩容提升候选多样性, 原为前6随机取2→前2定值),
+// 最近5min交易过的币不再交易
 func (tradeCoin1 TradeCoin1) SelectCoins(allCoins []*models.Symbols) (coins []*models.Symbols) {
 	exclude_symbols_map := getRecentOrderSymbols(5)
 	sort.SliceStable(allCoins, func(i, j int) bool {
@@ -52,7 +53,7 @@ func (tradeCoin1 TradeCoin1) SelectCoins(allCoins []*models.Symbols) (coins []*m
 			n--
 		}
 	}
-	addStrongest(filterCoins[:sliceLength], false, 2) // 跌幅最强
-	addStrongest(filterCoins, true, 2)                // 涨幅最强
+	addStrongest(filterCoins[:sliceLength], false, 4) // 跌幅最强
+	addStrongest(filterCoins, true, 4)                // 涨幅最强
 	return coins
 }
