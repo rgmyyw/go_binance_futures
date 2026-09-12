@@ -29,18 +29,8 @@ func PlaceSymbolStopLoss(coin *models.Symbols, entryText string, leverage int64,
 		leverage = int64(coin.Leverage)
 	}
 	entry, _ := strconv.ParseFloat(entryText, 64)
-	if entry <= 0 || leverage <= 0 {
-		return
-	}
-	move := loss / 100 / float64(leverage) // ROI 阈值换算为价格波动幅度
-	stopPrice := entry * (1 - move)
-	side := futures.SideTypeSell
-	if positionSide == futures.PositionSideTypeShort {
-		stopPrice = entry * (1 + move)
-		side = futures.SideTypeBuy
-	}
-	stopPrice = utils.GetTradePrecision(stopPrice, coin.TickSize)
-	if stopPrice <= 0 {
+	stopPrice, side, ok := calcStopPrice(entry, loss, leverage, positionSide == futures.PositionSideTypeShort, coin.TickSize)
+	if !ok {
 		return
 	}
 	if _, err := binance.OrderStopLossAlgo(coin.Symbol, stopPrice, side, positionSide); err != nil {
@@ -128,4 +118,19 @@ func stopOrderExists(orders []futures.GetAlgoOrderResp, symbol string, side futu
 		}
 	}
 	return false
+}
+
+// calcStopPrice 由 ROI 止损阈值换算交易所止损触发价(纯函数, 便于单测)
+// lossPct 为 ROI 百分比, leverage 换算为价格波动幅度后乘在开仓价上
+func calcStopPrice(entry float64, lossPct float64, leverage int64, short bool, tickSize string) (stopPrice float64, side futures.SideType, ok bool) {
+	if entry <= 0 || leverage <= 0 || lossPct <= 0 {
+		return 0, "", false
+	}
+	move := lossPct / 100 / float64(leverage) // ROI 阈值换算为价格波动幅度
+	if short {
+		price := entry * (1 + move)
+		return utils.GetTradePrecision(price, tickSize), futures.SideTypeBuy, true
+	}
+	price := entry * (1 - move)
+	return utils.GetTradePrecision(price, tickSize), futures.SideTypeSell, true
 }

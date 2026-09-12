@@ -59,3 +59,8 @@ func GetRandArr(arr []*models.Symbols, num int) (result []*models.Symbols) {
 
     return result
 }
+// getRecentOrderSymbols 可测试接缝: 生产路径查询币安最近成交订单
+var getRecentOrderSymbols = getLimitMinOrder
+
+// getRecentLocalOrderSymbols 可测试接缝: 生产路径查询本地订单库
+var getRecentLocalOrderSymbols = getLimitMinLocalOrder

@@ -2,7 +2,6 @@ package line
 
 import (
 	"encoding/json"
-	"go_binance_futures/feature/api/binance"
 	"go_binance_futures/feature/strategy"
 	"go_binance_futures/models"
 	"go_binance_futures/technology"
@@ -189,7 +188,7 @@ func (TradeLine TradeLineCustom) simpleCloseStrategy(closeParams strategy.CloseP
 		return closeResult
 	}
 	
-	lines, err := binance.GetKlineData(coin.Symbol, "5m", 2)
+	lines, err := getKlineData(coin.Symbol, "5m", 2)
 	if err != nil {
 		logs.Error("Error GetKlineData Symbol in line_custom: ", coin.Symbol)
 		logs.Error("Error GetKlineData Symbol in line_custom:", err.Error())

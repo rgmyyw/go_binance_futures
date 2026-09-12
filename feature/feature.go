@@ -457,9 +457,9 @@ func StartTrade(systemConfig *models.Config) {
 				logs.Error("%s:get depth avg price for open long failed, skip this round: %s", symbol, err.Error())
 			}
 			if err == nil {
-				if mid := (buyPrice + askPrice) / 2; mid > 0 && (askPrice-buyPrice)/mid > maxEntrySpreadPct {
+				if !entrySpreadOK(buyPrice, askPrice) {
 					// 盘口价差过宽的币(常见于meme), 市价单滑点会直接吃掉策略边际
-					logs.Info("%s:spread %.2f%% over %.2f%%, skip open long", symbol, (askPrice-buyPrice)/mid*100, maxEntrySpreadPct*100)
+					logs.Info("%s:spread %.2f%% over %.2f%%, skip open long", symbol, (askPrice-buyPrice)/(buyPrice+askPrice)*2*100, maxEntrySpreadPct*100)
 					continue
 				}
 				buyPrice = utils.GetTradePrecision(buyPrice, tickSize)   // 合理精度的价格
@@ -545,8 +545,8 @@ func StartTrade(systemConfig *models.Config) {
 				logs.Error("%s:get depth avg price for open short failed, skip this round: %s", symbol, err.Error())
 			}
 			if err == nil {
-				if mid := (bidPrice + sellPrice) / 2; mid > 0 && (sellPrice-bidPrice)/mid > maxEntrySpreadPct {
-					logs.Info("%s:spread %.2f%% over %.2f%%, skip open short", symbol, (sellPrice-bidPrice)/mid*100, maxEntrySpreadPct*100)
+				if !entrySpreadOK(bidPrice, sellPrice) {
+					logs.Info("%s:spread %.2f%% over %.2f%%, skip open short", symbol, (sellPrice-bidPrice)/(bidPrice+sellPrice)*2*100, maxEntrySpreadPct*100)
 					continue
 				}
 				sellPrice = utils.GetTradePrecision(sellPrice, tickSize)  // 合理精度的价格
@@ -1252,6 +1252,15 @@ const maxAutoScaleLossCount = 20
 
 // 开仓允许的最大盘口相对价差(买卖均价差/中间价), 超过则跳过该信号
 const maxEntrySpreadPct = 0.0035
+
+// entrySpreadOK 盘口价差是否允许市价入场(纯函数, 便于单测)
+func entrySpreadOK(bid, ask float64) bool {
+	mid := (bid + ask) / 2
+	if mid <= 0 {
+		return false
+	}
+	return (ask-bid)/mid <= maxEntrySpreadPct
+}
 
 func AutoLossScale(systemConfig *models.Config, flag bool) {	if systemConfig.LossAutoScale == 0 {
 		return

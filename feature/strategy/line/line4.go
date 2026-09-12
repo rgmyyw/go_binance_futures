@@ -1,7 +1,6 @@
 package line
 
 import (
-	"go_binance_futures/feature/api/binance"
 	"go_binance_futures/feature/strategy"
 	"go_binance_futures/utils"
 	"fmt"
@@ -23,11 +22,14 @@ type TradeLine4 struct {
 // 做空相反
 func (TradeLine4 TradeLine4) GetCanLongOrShort(openParams strategy.OpenParams) (openResult strategy.OpenResult) {
 	symbols := openParams.Symbols
+	if symbols == nil {
+		return
+	}
 	openResult.CanLong = false
 	openResult.CanShort = false
 	
-	kline_6h, err1 := binance.GetKlineData(symbols.Symbol, "6h", 50)
-	kline_1h, err2 := binance.GetKlineData(symbols.Symbol, "2h", 24)
+	kline_6h, err1 := getKlineData(symbols.Symbol, "6h", 50)
+	kline_1h, err2 := getKlineData(symbols.Symbol, "2h", 24)
 	if err1 != nil || err2 != nil {
 		openResult.Reason = fmt.Sprintf("no trading strategy conditions passed | K线获取失败(6h:%v, 2h:%v)", err1, err2)
 		return openResult
@@ -96,7 +98,7 @@ func (TradeLine4 TradeLine4) CanOrderComplete(closeParams strategy.CloseParams) 
 	position := closeParams.Position // 当前仓位
 	closeResult.Complete = false
 	
-	lines, err := binance.GetKlineData(symbols.Symbol, "5m", 2)
+	lines, err := getKlineData(symbols.Symbol, "5m", 2)
 	if err != nil {
 		closeResult.Complete = true
 		return closeResult
@@ -129,7 +131,7 @@ func (TradeLine4 TradeLine4) AutoStopOrder(closeParams strategy.CloseParams) (cl
 }
 
 func (TradeLine4 TradeLine4) MarketReversal(symbol string, positionSide string) (isReversal bool) {
-	kline_1d, err1 := binance.GetKlineData(symbol, "1d", 50)
+	kline_1d, err1 := getKlineData(symbol, "1d", 50)
 	if err1 != nil {
 		return false
 	}
