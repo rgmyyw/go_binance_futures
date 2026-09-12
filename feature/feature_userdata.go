@@ -68,9 +68,10 @@ func getNowUserData() {
 		positionModel.UnrealizedProfit = position.UnRealizedProfit
 		positionModel.AccumulatedRealized = "0"
 		positionModel.MaintenanceMarginRequired = "0"
-		positionModel.CreateTime = nowTime
 		positionModel.UpdateTime = nowTime
 		if positionModel.ID == 0 {
+			// 已存在的持仓保留原 CreateTime(时间止损依赖真实开仓时间, 不能被对账覆盖)
+			positionModel.CreateTime = nowTime
 			o.Insert(&positionModel)
 		} else {
 			o.Update(&positionModel)

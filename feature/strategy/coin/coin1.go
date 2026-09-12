@@ -8,7 +8,7 @@ import (
 type TradeCoin1 struct {
 }
 
-// 策略: 从涨幅榜中前6个里面随机选取2个，从跌幅榜中的前6个里面随机选取2个, 最近5min交易过的币不再交易
+// 策略: 从跌幅榜/涨幅榜各取动量最强的前2个(原为前6随机取2), 最近5min交易过的币不再交易
 func (tradeCoin1 TradeCoin1) SelectCoins(allCoins []*models.Symbols) (coins []*models.Symbols) {
 	exclude_symbols_map := getLimitMinOrder(5)
 	sort.SliceStable(allCoins, func(i, j int) bool {
@@ -28,9 +28,24 @@ func (tradeCoin1 TradeCoin1) SelectCoins(allCoins []*models.Symbols) (coins []*m
 	if len(filterCoins) < sliceLength {
 		sliceLength = len(filterCoins)
 	}
-	res1 := GetRandArr(filterCoins[:sliceLength], 2)
-	res2 := GetRandArr(filterCoins[len(filterCoins) - sliceLength:], 2)
-	coins = append(coins, res1...)
-	coins = append(coins, res2...)
+	// 确定性选取动量最强的各 2 个(原为前 6 随机取 2, 会随机丢弃一半同强度信号)
+	losers := filterCoins[:sliceLength]
+	gainers := filterCoins[len(filterCoins)-sliceLength:]
+	coins = append(coins, losers[:min(2, len(losers))]...)
+	coins = append(coins, gainers[max(0, len(gainers)-2):]...)
 	return coins
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
