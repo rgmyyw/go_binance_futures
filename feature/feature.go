@@ -452,11 +452,16 @@ func StartTrade(systemConfig *models.Config) {
 		}
 
 		if systemConfig.FutureAllowLong == 1 && hasPositionLong == false && hasBuyOrderLong == false && openResult.CanLong && !openOnCooldown(symbol, positionSideLong) && !lossCooldownActive(symbol, positionSideLong) && !chopBreakerActive() {
-			buyPrice, _, err := binance.GetDepthAvgPrice(symbol, 5) // 平均买价
+			buyPrice, askPrice, err := binance.GetDepthAvgPrice(symbol, 5) // 平均买价
 			if err != nil {
 				logs.Error("%s:get depth avg price for open long failed, skip this round: %s", symbol, err.Error())
 			}
 			if err == nil {
+				if mid := (buyPrice + askPrice) / 2; mid > 0 && (askPrice-buyPrice)/mid > maxEntrySpreadPct {
+					// 盘口价差过宽的币(常见于meme), 市价单滑点会直接吃掉策略边际
+					logs.Info("%s:spread %.2f%% over %.2f%%, skip open long", symbol, (askPrice-buyPrice)/mid*100, maxEntrySpreadPct*100)
+					continue
+				}
 				buyPrice = utils.GetTradePrecision(buyPrice, tickSize)   // 合理精度的价格
 				quantity := (usdt_float64 / buyPrice) * leverage_float64 // 购买数量
 				quantity = utils.GetTradePrecision(quantity, stepSize)   // 合理精度的价格
@@ -535,11 +540,15 @@ func StartTrade(systemConfig *models.Config) {
 		}
 		if systemConfig.FutureAllowShort == 1 && hasPositionShort == false && hasBuyOrderShort == false && openResult.CanShort && !openOnCooldown(symbol, positionSideShort) && !lossCooldownActive(symbol, positionSideShort) && !chopBreakerActive() {
 
-			_, sellPrice, err := binance.GetDepthAvgPrice(symbol, 5) // 平均卖价
+			bidPrice, sellPrice, err := binance.GetDepthAvgPrice(symbol, 5) // 平均卖价
 			if err != nil {
 				logs.Error("%s:get depth avg price for open short failed, skip this round: %s", symbol, err.Error())
 			}
 			if err == nil {
+				if mid := (bidPrice + sellPrice) / 2; mid > 0 && (sellPrice-bidPrice)/mid > maxEntrySpreadPct {
+					logs.Info("%s:spread %.2f%% over %.2f%%, skip open short", symbol, (sellPrice-bidPrice)/mid*100, maxEntrySpreadPct*100)
+					continue
+				}
 				sellPrice = utils.GetTradePrecision(sellPrice, tickSize)  // 合理精度的价格
 				quantity := (usdt_float64 / sellPrice) * leverage_float64 // 购买数量
 				quantity = utils.GetTradePrecision(quantity, stepSize)    // 合理精度的价格
@@ -1240,6 +1249,9 @@ func getTransformOpenOrders() (useOrders []types.FuturesOrder, err error) {
 var orderCount = 0 // 计数器, 当连续平仓盈利 2次(或亏损2次)后,增大(缩小)窗口
 // AutoLossScale 自动调节亏损闸门时 loss_max_count 的上限
 const maxAutoScaleLossCount = 20
+
+// 开仓允许的最大盘口相对价差(买卖均价差/中间价), 超过则跳过该信号
+const maxEntrySpreadPct = 0.0035
 
 func AutoLossScale(systemConfig *models.Config, flag bool) {	if systemConfig.LossAutoScale == 0 {
 		return

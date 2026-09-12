@@ -36,12 +36,14 @@ func (TradeLine5 TradeLine5) GetCanLongOrShort(openParams strategy.OpenParams) (
 	nowPrice, _ := strconv.ParseFloat(kline_1[0].Close, 64)
 	
 	percentLimit := 0.009 // 变化幅度
-	
-	if (nowPrice > lastOpenPrice) && (nowPrice - lastOpenPrice) / lastOpenPrice >= percentLimit {
+
+	allowLong := strategy.RegimeAllowsLong()
+	allowShort := strategy.RegimeAllowsShort()
+	if allowLong && (nowPrice > lastOpenPrice) && (nowPrice - lastOpenPrice) / lastOpenPrice >= percentLimit {
 		openResult.CanLong = true
 		return openResult
 	}
-	if (nowPrice < lastOpenPrice) && (lastOpenPrice - nowPrice) / lastOpenPrice >= percentLimit {
+	if allowShort && (nowPrice < lastOpenPrice) && (lastOpenPrice - nowPrice) / lastOpenPrice >= percentLimit {
 		openResult.CanShort = true
 		return openResult
 	}

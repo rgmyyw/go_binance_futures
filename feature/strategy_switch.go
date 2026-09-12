@@ -1,6 +1,7 @@
 package feature
 
 import (
+	"go_binance_futures/feature/strategy"
 	"go_binance_futures/models"
 	"go_binance_futures/types"
 
@@ -36,6 +37,10 @@ func AutoSwitchStrategyByMarket() {
 		logs.Error("AutoSwitchStrategyByMarket read config err:", err.Error())
 		return
 	}
+	// 同步行情状态给方向闸门(RegimeAllowsLong/Short), 供 line5/line6 过滤逆势信号。
+	// 放在各早退判断之前, 保证即使策略切换被停用, 方向闸门仍然生效
+	strategy.SetRegimeCondition(systemConfig.MarketCondition)
+
 	if systemConfig.FutureEnable != 1 {
 		return
 	}
