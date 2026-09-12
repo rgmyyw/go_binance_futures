@@ -1,7 +1,6 @@
 package line
 
 import (
-	"go_binance_futures/feature/api/binance"
 	"go_binance_futures/feature/strategy"
 	"go_binance_futures/utils"
 	"strconv"
