@@ -28,7 +28,7 @@ func (TradeLine6 TradeLine6) GetCanLongOrShort(openParams strategy.OpenParams) (
 	lastOpenPrice, _ := strconv.ParseFloat(kline_1[0].Open, 64)
 	nowPrice, _ := strconv.ParseFloat(kline_1[0].Close, 64)
 	
-	percentLimit := 0.015 // 变化幅度
+	percentLimit := 0.0015 // 变化幅度(0.15%; 原 0.015 系笔误, 3min 走 1.5% 在震荡市几乎不触发)
 	
 	if (nowPrice > lastOpenPrice) && (nowPrice - lastOpenPrice) / lastOpenPrice >= percentLimit {
 		openResult.CanShort = true
@@ -70,7 +70,8 @@ func (TradeLine6 TradeLine6) AutoStopOrder(closeParams strategy.CloseParams) (cl
 	position := closeParams.Position // 当前仓位
 	closeResult.Complete = false
 	
-	if closeParams.NowProfit < 3 || closeParams.NowProfit > -3 {
+	// 盈亏在 ±3 内才做日级反转提前退出(条件与 line5 对齐; 原写法恒为真导致此逻辑永不生效)
+	if closeParams.NowProfit > 3 || closeParams.NowProfit < -3 {
 		closeResult.Complete = false
 		return closeResult
 	}
