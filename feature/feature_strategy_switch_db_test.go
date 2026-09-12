@@ -67,6 +67,10 @@ func readConfigStrategy(t *testing.T) string {
 func resetSwitchState() {
 	regimeLastClass = -1
 	regimePendingClass = -1
+	strategyGuardMu.Lock()
+	line6LossStreak = 0
+	line6DemoteUntilMs = 0
+	strategyGuardMu.Unlock()
 }
 
 func TestAutoSwitchStrategyByMarketEndToEnd(t *testing.T) {

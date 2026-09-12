@@ -223,6 +223,7 @@ func StartTrade(systemConfig *models.Config) {
 						go CancelSymbolStopOrders(position.Symbol)
 						markLossCooldown(position.Symbol, position.Side)
 						recordStopLossEvent()
+						RecordStopLossForStrategy(systemConfig.FutureStrategyTrade)
 
 						markPrice, _ := strconv.ParseFloat(position.MarkPrice, 64)
 						pusher.SetModuleName("futures").FuturesCloseOrder(notify.FuturesOrderParams{
@@ -260,6 +261,7 @@ func StartTrade(systemConfig *models.Config) {
 						go CancelSymbolStopOrders(position.Symbol)
 						markLossCooldown(position.Symbol, position.Side)
 						recordStopLossEvent()
+						RecordStopLossForStrategy(systemConfig.FutureStrategyTrade)
 
 						markPrice, _ := strconv.ParseFloat(position.MarkPrice, 64)
 						pusher.SetModuleName("futures").FuturesCloseOrder(notify.FuturesOrderParams{
