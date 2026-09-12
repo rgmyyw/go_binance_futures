@@ -110,7 +110,8 @@ func TestCanOrderCompleteSideSemantics(t *testing.T) {
 	// line1: 错误路径返回 false(与 line2-6 的 true 不同, 固化各自现状)
 	line1 := TradeLine1{}
 	defer withKlines(nil, errTest)()
-	if res := line1.CanOrderComplete(strategy.CloseParams{Symbols: &models.Symbols{Symbol: "T"}, Position: types.FuturesPosition{Side: "LONG"}}); res.Complete {
+	tl1res := line1.CanOrderComplete(strategy.CloseParams{Symbols: &models.Symbols{Symbol: "T"}, Position: types.FuturesPosition{Side: "LONG"}})
+	if tl1res.Complete {
 		t.Fatal("line1 K线失败语义: 不放行平仓")
 	}
 	defer withKlines(fallingBars, nil)()
@@ -134,10 +135,14 @@ func TestLineCanOrderCompleteUnknownSide(t *testing.T) {
 	defer withKlines(fallingBars, nil)()
 
 	// 未知方向(BOTH): line1 强制平仓, 其余按既有实现持有
-	if res := TradeLine1{}.CanOrderComplete(strategy.CloseParams{Symbols: &models.Symbols{Symbol: "T"}, Position: types.FuturesPosition{Side: "BOTH"}}); !res.Complete {
+	tl1 := TradeLine1{}
+	tl1res := tl1.CanOrderComplete(strategy.CloseParams{Symbols: &models.Symbols{Symbol: "T"}, Position: types.FuturesPosition{Side: "BOTH"}})
+	if !tl1res.Complete {
 		t.Fatal("line1 未知方向应放行平仓")
 	}
-	if res := TradeLine2{}.CanOrderComplete(strategy.CloseParams{Symbols: &models.Symbols{Symbol: "T"}, Position: types.FuturesPosition{Side: "BOTH"}}); res.Complete {
+	tl2 := TradeLine2{}
+	tl2res := tl2.CanOrderComplete(strategy.CloseParams{Symbols: &models.Symbols{Symbol: "T"}, Position: types.FuturesPosition{Side: "BOTH"}})
+	if tl2res.Complete {
 		t.Fatal("line2 未知方向按既有实现不应平仓")
 	}
 }

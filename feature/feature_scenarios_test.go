@@ -21,12 +21,15 @@ func TestChopBreakerPauseExtension(t *testing.T) {
 		t.Fatal("应处于熔断暂停")
 	}
 	first := chopPauseUntil
-	// 暂停期间再次发生 3 次止损: 暂停窗口顺延
+	// 暂停期间再次发生 3 次止损: 重新武装暂停窗口(毫秒分辨率下可能等于原值)
 	for i := 0; i < 3; i++ {
 		recordStopLossEvent()
 	}
-	if chopPauseUntil <= first {
-		t.Fatal("暂停期间的止损应顺延暂停窗口")
+	if !chopBreakerActive() {
+		t.Fatal("再次触发后仍应处于熔断暂停")
+	}
+	if chopPauseUntil < first {
+		t.Fatal("暂停窗口不应回退")
 	}
 	resetChopBreaker()
 }
@@ -67,8 +70,8 @@ func TestResolveTradeROIThresholdsNegativeAndDecimal(t *testing.T) {
 
 func TestGetExcludeSymbolsMapEmptyParts(t *testing.T) {
 	m := GetExcludeSymbolsMap("BTCUSDT,,ETHUSDT,")
-	if len(m) != 4 {
-		t.Fatalf("空片段会产生空键: %v", m)
+	if len(m) != 3 { // 两个空片段合并为同一个空键
+		t.Fatalf("应解析出3个键(含空键): %v", m)
 	}
 	if !m["BTCUSDT"] || !m["ETHUSDT"] {
 		t.Fatal("有效币种应被解析")
