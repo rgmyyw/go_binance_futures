@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	agentevent "go_binance_futures/agent/event"
 	"go_binance_futures/feature/strategy"
 	"go_binance_futures/models"
 	"go_binance_futures/types"
