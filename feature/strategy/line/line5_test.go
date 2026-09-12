@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"go_binance_futures/feature/api/binance"
 	"go_binance_futures/feature/strategy"
 	"go_binance_futures/models"
 	"go_binance_futures/types"
@@ -193,4 +192,4 @@ func TestLine5TimeStop(t *testing.T) {
 
 var errTest = errors.New("test kline error")
 
-var _ = binance.GetKlineData // 引用生产实现, 确保接缝替换不遗漏编译
+// 接缝 getKlineData 生产实现见 kline_fetch.go
