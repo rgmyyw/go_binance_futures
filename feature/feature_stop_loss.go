@@ -113,6 +113,10 @@ func SyncStopOrders() {
 		if stopOrderExists(openOrders, p.Symbol, side) {
 			continue
 		}
+		if coinMap[p.Symbol] == nil {
+			logs.Error("%s:cannot backfill exchange stop loss, symbol info missing in symbols table", p.Symbol)
+			continue
+		}
 		PlaceSymbolStopLoss(coinMap[p.Symbol], p.EntryPrice, p.Leverage, side)
 	}
 }
