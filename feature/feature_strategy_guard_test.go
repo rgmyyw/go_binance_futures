@@ -1,6 +1,7 @@
 package feature
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -85,8 +86,12 @@ func TestRealizedCloseEventDrivesDemotion(t *testing.T) {
 }
 
 func handleRealizedCloseForTest(orderId int64, pnl float64) error {
-	return handleRealizedClose(evtFakeRealizedClose(orderId, pnl))
+	return handleRealizedClose(context.Background(), evtFakeRealizedClose{orderId: orderId, pnl: pnl})
 }
 
-type evtFakeRealizedClose struct{ id int64; pnl float64 }
+type evtFakeRealizedClose struct {
+	orderId int64
+	pnl     float64
+}
+
 func (e evtFakeRealizedClose) Metadata() agentevent.Metadata { return agentevent.Metadata{} }
