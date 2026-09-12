@@ -182,8 +182,8 @@ func (TradeLine TradeLineCustom) simpleCloseStrategy(closeParams strategy.CloseP
 	position := closeParams.Position // 当前仓位
 	closeResult.Complete = false
 	
-	if closeParams.NowProfit < 3 || closeParams.NowProfit > -3 {
-		// 收益率小于3%或者大于-3%, 不平仓
+	// 收益率在 ±3 内不平仓(原写法恒为真导致动量平仓永不生效, 与其他策略修复对齐)
+	if closeParams.NowProfit < 3 && closeParams.NowProfit > -3 {
 		closeResult.Complete = false
 		return closeResult
 	}
