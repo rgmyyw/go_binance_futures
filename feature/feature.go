@@ -139,6 +139,7 @@ func StartTrade(systemConfig *models.Config) {
 				if err == nil {
 					// 数据库写入订单
 					insertCloseOrder(position, positionAmtFloatAbs, unRealizedProfit, position.MarkPrice, order.OrderID, systemConfig)
+					go CancelSymbolStopOrders(position.Symbol)
 
 					markPrice, _ := strconv.ParseFloat(position.MarkPrice, 64)
 					pusher.SetModuleName("futures").FuturesCloseOrder(notify.FuturesOrderParams{
@@ -173,6 +174,7 @@ func StartTrade(systemConfig *models.Config) {
 				if err == nil {
 					// 数据库写入订单
 					insertCloseOrder(position, positionAmtFloatAbs, unRealizedProfit, position.MarkPrice, order.OrderID, systemConfig)
+					go CancelSymbolStopOrders(position.Symbol)
 
 					markPrice, _ := strconv.ParseFloat(position.MarkPrice, 64)
 					pusher.SetModuleName("futures").FuturesCloseOrder(notify.FuturesOrderParams{
