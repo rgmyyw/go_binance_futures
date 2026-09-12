@@ -10,7 +10,7 @@ type TradeCoin3 struct {
 
 // 策略: 最近10min交易过的币不再交易,随机选取2个
 func (tradeCoin3 TradeCoin3) SelectCoins(allCoins []*models.Symbols) (coins []*models.Symbols) {
-	exclude_symbols_map := getLimitMinOrder(10)
+	exclude_symbols_map := getRecentOrderSymbols(10)
 	sort.SliceStable(allCoins, func(i, j int) bool {
 		return allCoins[i].PercentChange < allCoins[j].PercentChange // 涨幅从小到大排序
 	})

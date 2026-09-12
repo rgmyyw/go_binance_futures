@@ -1,7 +1,6 @@
 package line
 
 import (
-	"go_binance_futures/feature/api/binance"
 	"go_binance_futures/feature/strategy"
 	"go_binance_futures/utils"
 	"strconv"
@@ -19,10 +18,13 @@ type TradeLine2 struct {
 // 6小时线的ema金叉
 func (TradeLine2 TradeLine2) GetCanLongOrShort(openParams strategy.OpenParams) (openResult strategy.OpenResult) {
 	symbols := openParams.Symbols
+	if symbols == nil {
+		return
+	}
 	openResult.CanLong = false
 	openResult.CanShort = false
 	
-	kline_6h, err1 := binance.GetKlineData(symbols.Symbol, "6h", 50)
+	kline_6h, err1 := getKlineData(symbols.Symbol, "6h", 50)
 	if err1 != nil {
 		return openResult
 	}
@@ -55,7 +57,7 @@ func (TradeLine2 TradeLine2) CanOrderComplete(closeParams strategy.CloseParams) 
 	position := closeParams.Position // 当前仓位
 	closeResult.Complete = false
 	
-	lines, err := binance.GetKlineData(symbols.Symbol, "1m", 2) // 1min 线最近2条
+	lines, err := getKlineData(symbols.Symbol, "1m", 2) // 1min 线最近2条
 	if err != nil {
 		closeResult.Complete = true
 		return closeResult

@@ -39,7 +39,7 @@ func AutoSwitchStrategyByMarket() {
 	}
 	// 同步行情状态给方向闸门(RegimeAllowsLong/Short), 供 line5/line6 过滤逆势信号。
 	// 放在各早退判断之前, 保证即使策略切换被停用, 方向闸门仍然生效
-	strategy.SetRegimeCondition(systemConfig.MarketCondition)
+	syncRegimeGate(systemConfig.MarketCondition)
 
 	if systemConfig.FutureEnable != 1 {
 		return
@@ -75,6 +75,11 @@ func AutoSwitchStrategyByMarket() {
 	regimeLastClass, regimePendingClass = newLast, newPending
 	logs.Info("auto switch strategy by market condition %s: %s -> %s",
 		types.MarketConditionName(systemConfig.MarketCondition), systemConfig.FutureStrategyTrade, target)
+}
+
+// syncRegimeGate 行情状态同步给方向闸门(独立于策略切换开关)
+func syncRegimeGate(condition int) {
+	strategy.SetRegimeCondition(condition)
 }
 
 // regimeDecideNext 防抖状态机(纯函数, 便于单测):

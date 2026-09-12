@@ -1,7 +1,6 @@
 package line
 
 import (
-	"go_binance_futures/feature/api/binance"
 	"go_binance_futures/feature/strategy"
 	"go_binance_futures/utils"
 	"math"
@@ -18,10 +17,13 @@ type TradeLine1 struct {
 
 func (tradeLine1 TradeLine1) GetCanLongOrShort(openParams strategy.OpenParams) (openResult strategy.OpenResult) {
 	symbols := openParams.Symbols
+	if symbols == nil {
+		return
+	}
 	openResult.CanLong = false
 	openResult.CanShort = false
 	
-	kline_3m, err := binance.GetKlineData(symbols.Symbol, "3m", 50)
+	kline_3m, err := getKlineData(symbols.Symbol, "3m", 50)
 	if err != nil {
 		return openResult
 	}
@@ -41,7 +43,7 @@ func (tradeLine1 TradeLine1) CanOrderComplete(closeParams strategy.CloseParams) 
 	position := closeParams.Position // 当前仓位
 	closeResult.Complete = false
 	
-	lines, err := binance.GetKlineData(symbols.Symbol, "1m", 2) // 1min 线最近2条
+	lines, err := getKlineData(symbols.Symbol, "1m", 2) // 1min 线最近2条
 	if err != nil {
 		return closeResult
 	}

@@ -1,7 +1,6 @@
 package line
 
 import (
-	"go_binance_futures/feature/api/binance"
 	"go_binance_futures/feature/strategy"
 	"go_binance_futures/utils"
 	"math"
@@ -20,6 +19,9 @@ type TradeLine3 struct {
 // 做空相反
 func (TradeLine3 TradeLine3) GetCanLongOrShort(openParams strategy.OpenParams) (openResult strategy.OpenResult) {
 	symbols := openParams.Symbols
+	if symbols == nil {
+		return
+	}
 	openResult.CanLong = false
 	openResult.CanShort = false
 
@@ -29,7 +31,7 @@ func (TradeLine3 TradeLine3) GetCanLongOrShort(openParams strategy.OpenParams) (
 	ema_period1 := 3
 	ema_period2 := 7
 
-	kline_1, err := binance.GetKlineData(symbols.Symbol, kline_interval1, limit)
+	kline_1, err := getKlineData(symbols.Symbol, kline_interval1, limit)
 	if err != nil {
 		return openResult
 	}
@@ -69,7 +71,7 @@ func (TradeLine3 TradeLine3) CanOrderComplete(closeParams strategy.CloseParams) 
 	position := closeParams.Position // 当前仓位
 	closeResult.Complete = false
 
-	lines, err := binance.GetKlineData(symbols.Symbol, "5m", 2)
+	lines, err := getKlineData(symbols.Symbol, "5m", 2)
 	if err != nil {
 		closeResult.Complete = true
 		return closeResult
@@ -102,7 +104,7 @@ func (TradeLine3 TradeLine3) AutoStopOrder(closeParams strategy.CloseParams) (cl
 }
 
 func (TradeLine3 TradeLine3) MarketReversal(symbol string, positionSide string) (isReversal bool) {
-	kline_1d, err1 := binance.GetKlineData(symbol, "1d", 50)
+	kline_1d, err1 := getKlineData(symbol, "1d", 50)
 	if err1 != nil {
 		return false
 	}
