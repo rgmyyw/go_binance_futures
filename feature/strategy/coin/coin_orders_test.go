@@ -36,9 +36,9 @@ func TestGetLimitMinLocalOrderCloseOnly(t *testing.T) {
 	setupCoinTestDB(t)
 	o := orm.NewOrm()
 	now := timeNowMs()
-	_, _ = o.Raw("insert into `order` (order_id, symbol, side, update_time) values (1, 'CLSUSDT', 'close', ?)", now).Exec()
-	_, _ = o.Raw("insert into `order` (order_id, symbol, side, update_time) values (2, 'OPNUSDT', 'open', ?)", now).Exec()
-	_, _ = o.Raw("insert into `order` (order_id, symbol, side, update_time) values (3, 'OLDUSDT', 'close', ?)", now-10*60*1000).Exec()
+	_, _ = o.Raw("insert into `order` (order_id, symbol, side, updateTime) values (1, 'CLSUSDT', 'close', ?)", now).Exec()
+	_, _ = o.Raw("insert into `order` (order_id, symbol, side, updateTime) values (2, 'OPNUSDT', 'open', ?)", now).Exec()
+	_, _ = o.Raw("insert into `order` (order_id, symbol, side, updateTime) values (3, 'OLDUSDT', 'close', ?)", now-10*60*1000).Exec()
 
 	got := getLimitMinLocalOrder(5)
 	if !got["CLSUSDT"] {

@@ -51,12 +51,12 @@ func TestResJson(t *testing.T) {
 	if !ok {
 		t.Fatal("应返回map")
 	}
-	if m["code"] != 200 || m["message"] != "success" {
+	if m["code"] != 200 || m["msg"] != "success" {
 		t.Fatalf("默认成功消息错误: %v", m)
 	}
 	res = ResJson(500, nil, "boom")
 	m = res.(map[string]interface{})
-	if m["code"] != 500 || m["message"] != "boom" {
+	if m["code"] != 500 || m["msg"] != "boom" {
 		t.Fatalf("自定义消息错误: %v", m)
 	}
 }
