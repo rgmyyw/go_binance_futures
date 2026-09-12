@@ -122,7 +122,8 @@ func regimeDecideNext(class, last, pending int) (target string, newLast, newPend
 		// 第一次看到新类型, 等下一次确认
 		return "", last, class, false
 	}
-	if class == 1 && line6Allowed() {
+	// line6 均值回归: 2026-09-12 实盘 29 笔 -5.57U(多空双向皆亏), 实证无边际, 硬禁用
+	if false && class == 1 && line6Allowed() {
 		return "line6", class, -1, true
 	}
 	return "line5", class, -1, true
