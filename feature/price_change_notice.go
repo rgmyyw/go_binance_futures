@@ -95,6 +95,7 @@ func handlePriceChangeTick(ctx context.Context, evt agentevent.Event) error {
 	})
 	entry.lastAlertAt = nowMs
 	entry.refPrice = tick.Price
+	return nil
 }
 
 // 每 1 分钟刷新: 开关/阈值 + 启用币种集合(改配置无需重启)
@@ -102,7 +103,7 @@ func refreshPriceChangeSnapshot() {
 	systemConfig, err := utils.GetSystemConfig()
 	if err != nil {
 		logs.Error("price change notice load config:", err)
-		return nil
+		return
 	}
 	snap := priceChangeSnapshot{
 		wsEnabled: systemConfig.WsFuturesEnable == 1,
@@ -112,7 +113,7 @@ func refreshPriceChangeSnapshot() {
 	var coins []*models.Symbols
 	if _, err := orm.NewOrm().QueryTable("symbols").Filter("enable", 1).All(&coins); err != nil {
 		logs.Error("load enabled symbols for price change notice:", err)
-		return nil
+		return
 	}
 	for _, coin := range coins {
 		if s := strings.TrimSpace(coin.Symbol); s != "" {
