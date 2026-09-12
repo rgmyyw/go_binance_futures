@@ -117,8 +117,9 @@ func (TradeLine TradeLine7) CanOrderComplete(closeParams strategy.CloseParams) (
 func (TradeLine TradeLine7) AutoStopOrder(closeParams strategy.CloseParams) (closeResult strategy.CloseResult) {
 	position := closeParams.Position // 当前仓位
 	closeResult.Complete = false
-
-	if autoStopNeutralROI(closeParams.NowProfit) {
+	
+	// 盈亏在 ±3 内才做日级反转提前退出(条件与 line3/4/5 对齐; 原写法恒为真导致此逻辑永不生效)
+	if closeParams.NowProfit > 3 || closeParams.NowProfit < -3 {
 		closeResult.Complete = false
 		return closeResult
 	}
