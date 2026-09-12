@@ -5,8 +5,10 @@ import (
 	"go_binance_futures/feature/strategy"
 	"go_binance_futures/utils"
 	"strconv"
+	"time"
 
 	"github.com/adshao/go-binance/v2/futures"
+	"github.com/beego/beego/v2/core/logs"
 )
 
 type TradeLine5 struct {
@@ -81,7 +83,15 @@ func (TradeLine5 TradeLine5) CanOrderComplete(closeParams strategy.CloseParams) 
 func (TradeLine5 TradeLine5) AutoStopOrder(closeParams strategy.CloseParams) (closeResult strategy.CloseResult) {
 	position := closeParams.Position // 当前仓位
 	closeResult.Complete = false
-	
+
+	// 时间止损: 1m 动量入场, 60 分钟仍未触发 ±5 ROI 出场的仓位说明动能已散,
+	// 与其占用仓位槽等日线级反转, 不如离场换下一个信号
+	if position.CreateTime > 0 && time.Now().UnixMilli()-position.CreateTime > time.Hour.Milliseconds() {
+		logs.Info("%s:hold over 60min, time stop", position.Symbol)
+		closeResult.Complete = true
+		return closeResult
+	}
+
 	if closeParams.NowProfit > 3 || closeParams.NowProfit < -3 {
 		closeResult.Complete = false
 		return closeResult

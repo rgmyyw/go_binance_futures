@@ -219,6 +219,7 @@ func StartTrade(systemConfig *models.Config) {
 						insertCloseOrder(position, positionAmtFloatAbs, unRealizedProfit, position.MarkPrice, order.OrderID, systemConfig)
 						go CancelSymbolStopOrders(position.Symbol)
 						markLossCooldown(position.Symbol, position.Side)
+						recordStopLossEvent()
 
 						markPrice, _ := strconv.ParseFloat(position.MarkPrice, 64)
 						pusher.SetModuleName("futures").FuturesCloseOrder(notify.FuturesOrderParams{
@@ -255,6 +256,7 @@ func StartTrade(systemConfig *models.Config) {
 						insertCloseOrder(position, positionAmtFloatAbs, unRealizedProfit, position.MarkPrice, order.OrderID, systemConfig)
 						go CancelSymbolStopOrders(position.Symbol)
 						markLossCooldown(position.Symbol, position.Side)
+						recordStopLossEvent()
 
 						markPrice, _ := strconv.ParseFloat(position.MarkPrice, 64)
 						pusher.SetModuleName("futures").FuturesCloseOrder(notify.FuturesOrderParams{
@@ -449,7 +451,7 @@ func StartTrade(systemConfig *models.Config) {
 			}
 		}
 
-		if systemConfig.FutureAllowLong == 1 && hasPositionLong == false && hasBuyOrderLong == false && openResult.CanLong && !openOnCooldown(symbol, positionSideLong) && !lossCooldownActive(symbol, positionSideLong) {
+		if systemConfig.FutureAllowLong == 1 && hasPositionLong == false && hasBuyOrderLong == false && openResult.CanLong && !openOnCooldown(symbol, positionSideLong) && !lossCooldownActive(symbol, positionSideLong) && !chopBreakerActive() {
 			buyPrice, _, err := binance.GetDepthAvgPrice(symbol, 5) // 平均买价
 			if err != nil {
 				logs.Error("%s:get depth avg price for open long failed, skip this round: %s", symbol, err.Error())
@@ -531,7 +533,7 @@ func StartTrade(systemConfig *models.Config) {
 				isOpen = true
 			}
 		}
-		if systemConfig.FutureAllowShort == 1 && hasPositionShort == false && hasBuyOrderShort == false && openResult.CanShort && !openOnCooldown(symbol, positionSideShort) && !lossCooldownActive(symbol, positionSideShort) {
+		if systemConfig.FutureAllowShort == 1 && hasPositionShort == false && hasBuyOrderShort == false && openResult.CanShort && !openOnCooldown(symbol, positionSideShort) && !lossCooldownActive(symbol, positionSideShort) && !chopBreakerActive() {
 
 			_, sellPrice, err := binance.GetDepthAvgPrice(symbol, 5) // 平均卖价
 			if err != nil {

@@ -5,6 +5,9 @@ import (
 	"go_binance_futures/feature/strategy"
 	"go_binance_futures/utils"
 	"strconv"
+	"time"
+
+	"github.com/beego/beego/v2/core/logs"
 )
 
 type TradeLine6 struct {
@@ -75,7 +78,14 @@ func (TradeLine6 TradeLine6) CanOrderComplete(closeParams strategy.CloseParams) 
 func (TradeLine6 TradeLine6) AutoStopOrder(closeParams strategy.CloseParams) (closeResult strategy.CloseResult) {
 	position := closeParams.Position // 当前仓位
 	closeResult.Complete = false
-	
+
+	// 时间止损: 3m 均值回归入场, 90 分钟未触发 ±5 ROI 出场说明区间判断失效, 离场
+	if position.CreateTime > 0 && time.Now().UnixMilli()-position.CreateTime > 90*time.Minute.Milliseconds() {
+		logs.Info("%s:hold over 90min, time stop", position.Symbol)
+		closeResult.Complete = true
+		return closeResult
+	}
+
 	// 盈亏在 ±3 内才做日级反转提前退出(条件与 line5 对齐; 原写法恒为真导致此逻辑永不生效)
 	if closeParams.NowProfit > 3 || closeParams.NowProfit < -3 {
 		closeResult.Complete = false
