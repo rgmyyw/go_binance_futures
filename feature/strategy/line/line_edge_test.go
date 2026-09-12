@@ -135,7 +135,7 @@ func TestLineCanOrderCompleteUnknownSide(t *testing.T) {
 	fallingBars := []*futures.Kline{k("100", "100", "99", "99", 1000), k("100", "100", "100", "100", 998)}
 	defer withKlines(fallingBars, nil)()
 
-	// 未知方向(BOTH): line1 强制平仓, 其余按既有实现持有
+	// 未知方向(BOTH): 全部策略均有 else 分支 → 放行平仓(固化现状)
 	tl1 := TradeLine1{}
 	tl1res := tl1.CanOrderComplete(strategy.CloseParams{Symbols: &models.Symbols{Symbol: "T"}, Position: types.FuturesPosition{Side: "BOTH"}})
 	if !tl1res.Complete {
@@ -148,8 +148,8 @@ func TestLineCanOrderCompleteUnknownSide(t *testing.T) {
 	}
 	tl5 := TradeLine5{}
 	tl5res := tl5.CanOrderComplete(strategy.CloseParams{Symbols: &models.Symbols{Symbol: "T"}, Position: types.FuturesPosition{Side: "BOTH"}})
-	if tl5res.Complete {
-		t.Fatal("line5 未知方向按既有实现(无else)不应平仓")
+	if !tl5res.Complete {
+		t.Fatal("line5 未知方向按既有实现(else)应放行平仓")
 	}
 }
 
