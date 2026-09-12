@@ -29,7 +29,7 @@ func setupTestDB(t *testing.T) {
 			return
 		}
 		_ = orm.RegisterDriver("sqlite3", orm.DRSqlite)
-		orm.RegisterModel(new(models.Config), new(models.TestStrategyResults))
+		orm.RegisterModel(new(models.Config), new(models.TestStrategyResults), new(models.Order))
 		if err := orm.RunSyncdb("default", false, false); err != nil {
 			testDBErr = err
 		}
