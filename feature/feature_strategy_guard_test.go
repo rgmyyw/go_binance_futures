@@ -3,6 +3,8 @@ package feature
 import (
 	"testing"
 	"time"
+
+	agentevent "go_binance_futures/agent/event"
 )
 
 func TestLine6DemotionAfterThreeStops(t *testing.T) {
