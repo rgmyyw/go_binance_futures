@@ -305,6 +305,8 @@ func main() {
 	loopRun(feature.AutoSwitchStrategyByMarket, time.Minute*10)
 	// 价格变动提醒(ws_futures_price_change_limit, 对启用币种监控累计涨跌幅)
 	feature.StartPriceChangeNotice()
+	// 绩效看门狗(每50笔平仓推送胜率/期望报告, 供仓位升降级决策)
+	feature.StartPerfWatchdog()
 	// Agent 周期任务统一由 Scheduler 触发。
 	if err := agentapp.StartDefaultScheduler(context.Background(), func() models.Config { return SystemConfig }); err != nil {
 		logs.Error("start agent scheduler:", err)
