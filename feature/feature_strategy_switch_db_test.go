@@ -41,8 +41,8 @@ func setupTestDB(t *testing.T) {
 func upsertConfigRow(t *testing.T, strategyTrade string, condition int, isAuto int, futureEnable int) {
 	t.Helper()
 	o := orm.NewOrm()
-	cfg := models.Config{Id: 1}
-	if _, _, err := o.ReadOrCreate(&cfg, "Id"); err != nil {
+	cfg := models.Config{ID: 1}
+	if _, _, err := o.ReadOrCreate(&cfg, "ID"); err != nil {
 		t.Fatal(err)
 	}
 	cfg.FutureStrategyTrade = strategyTrade
