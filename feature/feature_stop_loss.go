@@ -33,7 +33,7 @@ func PlaceSymbolStopLoss(coin *models.Symbols, entryText string, leverage int64,
 	if !ok {
 		return
 	}
-	if _, err := binance.OrderStopLossAlgo(coin.Symbol, stopPrice, side, positionSide); err != nil {
+	if _, err := placeStopLossAlgo(coin.Symbol, stopPrice, side, positionSide); err != nil {
 		logs.Error("%s:place exchange stop loss(%s@%v) failed: %s", coin.Symbol, positionSide, stopPrice, err.Error())
 		return
 	}
@@ -134,3 +134,6 @@ func calcStopPrice(entry float64, lossPct float64, leverage int64, short bool, t
 	price := entry * (1 - move)
 	return utils.GetTradePrecision(price, tickSize), futures.SideTypeSell, true
 }
+
+// placeStopLossAlgo 可测试接缝: 生产路径直接调用币安 Algo 止损下单
+var placeStopLossAlgo = binance.OrderStopLossAlgo
