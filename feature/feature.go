@@ -221,7 +221,7 @@ func StartTrade(systemConfig *models.Config) {
 						// 数据库写入订单
 						insertCloseOrder(position, positionAmtFloatAbs, unRealizedProfit, position.MarkPrice, order.OrderID, systemConfig)
 						go CancelSymbolStopOrders(position.Symbol)
-						markLossCooldown(position.Symbol, positionSideLong)
+						markLossCooldown(position.Symbol, position.Side)
 
 						markPrice, _ := strconv.ParseFloat(position.MarkPrice, 64)
 						pusher.SetModuleName("futures").FuturesCloseOrder(notify.FuturesOrderParams{
@@ -257,7 +257,7 @@ func StartTrade(systemConfig *models.Config) {
 						// 数据库写入订单
 						insertCloseOrder(position, positionAmtFloatAbs, unRealizedProfit, position.MarkPrice, order.OrderID, systemConfig)
 						go CancelSymbolStopOrders(position.Symbol)
-						markLossCooldown(position.Symbol, positionSideShort)
+						markLossCooldown(position.Symbol, position.Side)
 
 						markPrice, _ := strconv.ParseFloat(position.MarkPrice, 64)
 						pusher.SetModuleName("futures").FuturesCloseOrder(notify.FuturesOrderParams{
