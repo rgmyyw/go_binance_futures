@@ -29,23 +29,30 @@ func (tradeCoin1 TradeCoin1) SelectCoins(allCoins []*models.Symbols) (coins []*m
 		sliceLength = len(filterCoins)
 	}
 	// 确定性选取动量最强的各 2 个(原为前 6 随机取 2, 会随机丢弃一半同强度信号)
-	losers := filterCoins[:sliceLength]
-	gainers := filterCoins[len(filterCoins)-sliceLength:]
-	coins = append(coins, losers[:min(2, len(losers))]...)
-	coins = append(coins, gainers[max(0, len(gainers)-2):]...)
+	// 币种不足时两侧切片会重叠, 用 seen 去重防止同一币入选两次
+	seen := map[string]bool{}
+	addStrongest := func(candidates []*models.Symbols, fromEnd bool, n int) {
+		if fromEnd {
+			for i := len(candidates) - 1; i >= 0 && n > 0; i-- {
+				if seen[candidates[i].Symbol] {
+					continue
+				}
+				seen[candidates[i].Symbol] = true
+				coins = append(coins, candidates[i])
+				n--
+			}
+			return
+		}
+		for i := 0; i < len(candidates) && n > 0; i++ {
+			if seen[candidates[i].Symbol] {
+				continue
+			}
+			seen[candidates[i].Symbol] = true
+			coins = append(coins, candidates[i])
+			n--
+		}
+	}
+	addStrongest(filterCoins[:sliceLength], false, 2) // 跌幅最强
+	addStrongest(filterCoins, true, 2)                // 涨幅最强
 	return coins
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
 }
