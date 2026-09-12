@@ -22,8 +22,12 @@ func (TradeLine6 TradeLine6) GetCanLongOrShort(openParams strategy.OpenParams) (
 	symbols := openParams.Symbols
 	openResult.CanLong = false
 	openResult.CanShort = false
+
+	if symbols == nil {
+		return openResult
+	}
 	
-	kline_1, err1 := binance.GetKlineData(symbols.Symbol, "3m", 20)
+	kline_1, err1 := getKlineData(symbols.Symbol, "3m", 20)
 	if err1 != nil || len(kline_1) < 1 {
 		return openResult
 	}
@@ -58,7 +62,7 @@ func (TradeLine6 TradeLine6) CanOrderComplete(closeParams strategy.CloseParams) 
 		return closeResult
 	}
 
-	lines, err := binance.GetKlineData(symbols.Symbol, "3m", 2)
+	lines, err := getKlineData(symbols.Symbol, "3m", 2)
 	if err != nil || len(lines) < 2 {
 		closeResult.Complete = true
 		return closeResult
@@ -98,7 +102,7 @@ func (TradeLine6 TradeLine6) AutoStopOrder(closeParams strategy.CloseParams) (cl
 }
 
 func (TradeLine6 TradeLine6) MarketReversal(symbol string, positionSide string) (isReversal bool) {
-	kline_1d, err1 := binance.GetKlineData(symbol, "1d", 50)
+	kline_1d, err1 := getKlineData(symbol, "1d", 50)
 	if err1 != nil {
 		return false
 	}

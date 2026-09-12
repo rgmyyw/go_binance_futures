@@ -54,27 +54,17 @@ func AutoSwitchStrategyByMarket() {
 	}
 
 	class := regimeClassByCondition(systemConfig.MarketCondition)
-	if regimeLastClass == -1 {
-		regimeLastClass = class
-		regimePendingClass = -1
-		return
-	}
-	if class == regimeLastClass {
-		regimePendingClass = -1
-		return
-	}
-	if regimePendingClass != class {
-		// 第一次看到新类型, 等下一次确认
-		regimePendingClass = class
-		logs.Info("market regime changed to %s, waiting confirm before switch strategy",
-			types.MarketConditionName(systemConfig.MarketCondition))
+	target, newLast, newPending, shouldSwitch := regimeDecideNext(class, regimeLastClass, regimePendingClass)
+	if !shouldSwitch {
+		regimeLastClass, regimePendingClass = newLast, newPending
+		if newPending != -1 {
+			// 第一次看到新类型, 等下一次确认
+			logs.Info("market regime changed to %s, waiting confirm before switch strategy",
+				types.MarketConditionName(systemConfig.MarketCondition))
+		}
 		return
 	}
 
-	target := "line5"
-	if class == 1 {
-		target = "line6"
-	}
 	_, err = o.QueryTable("config").Filter("id", systemConfig.ID).Update(orm.Params{
 		"future_strategy_trade": target,
 	})
@@ -82,8 +72,27 @@ func AutoSwitchStrategyByMarket() {
 		logs.Error("AutoSwitchStrategyByMarket update err:", err.Error())
 		return
 	}
-	regimeLastClass = class
-	regimePendingClass = -1
+	regimeLastClass, regimePendingClass = newLast, newPending
 	logs.Info("auto switch strategy by market condition %s: %s -> %s",
 		types.MarketConditionName(systemConfig.MarketCondition), systemConfig.FutureStrategyTrade, target)
+}
+
+// regimeDecideNext 防抖状态机(纯函数, 便于单测):
+// class=本次判定(0趋势/1震荡), last=上次生效类型(-1未初始化), pending=待确认类型(-1无)
+// 返回: 目标策略, 新last, 新pending, 是否切换
+func regimeDecideNext(class, last, pending int) (target string, newLast, newPending int, shouldSwitch bool) {
+	if last == -1 {
+		return "", class, -1, false
+	}
+	if class == last {
+		return "", last, -1, false
+	}
+	if pending != class {
+		// 第一次看到新类型, 等下一次确认
+		return "", last, class, false
+	}
+	if class == 1 {
+		return "line6", class, -1, true
+	}
+	return "line5", class, -1, true
 }
