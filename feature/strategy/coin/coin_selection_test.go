@@ -35,8 +35,8 @@ func TestCoin1PicksStrongestMoversDeterministically(t *testing.T) {
 		sym("GUSDT", 0, 50),  // 未启用, 应被排除
 	}
 	got := TradeCoin1{}.SelectCoins(coins)
-	if len(got) != 4 {
-		t.Fatalf("应选出4个币, 实际%d个", len(got))
+	if len(got) != 6 { // 跌侧最强4 + 涨侧最强4, 去重后6个唯一
+		t.Fatalf("应选出6个币, 实际%d个: %v", len(got), got)
 	}
 	seen := map[string]bool{}
 	for _, c := range got {
