@@ -3,6 +3,8 @@ package feature
 import (
 	"testing"
 
+	"github.com/beego/beego/v2/client/orm"
+
 	"go_binance_futures/models"
 )
 
