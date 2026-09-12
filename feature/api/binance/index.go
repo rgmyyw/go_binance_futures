@@ -1164,8 +1164,10 @@ func WsUserData() {
 				position.IsolatedWallet = v.IsolatedWallet
 				position.EntryPrice = v.EntryPrice
 				if v.MarkPrice != "" {
-					// ACCOUNT_UPDATE 事件可能不携带标记价, 空值不覆写(否则软止盈止损的ROI计算失明)
 					position.MarkPrice = v.MarkPrice
+				} else if symbols.Close != "" {
+					// ACCOUNT_UPDATE 事件可能不携带标记价: 回退 symbols 实时收盘价, 避免持仓表出现空标记价
+					position.MarkPrice = symbols.Close
 				}
 				position.UnrealizedProfit = v.UnrealizedPnL
 				position.AccumulatedRealized = v.AccumulatedRealized
