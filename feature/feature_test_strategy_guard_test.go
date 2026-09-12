@@ -4,20 +4,10 @@ import (
 	"testing"
 
 	"go_binance_futures/models"
-
-	"github.com/beego/beego/v2/client/orm"
-	_ "github.com/mattn/go-sqlite3"
 )
 
 func TestCreateTestResultAllowsOnlyOneOpenRowPerSymbol(t *testing.T) {
-	_ = orm.RegisterDriver("sqlite3", orm.DRSqlite)
-	if err := orm.RegisterDataBase("default", "sqlite3", "file:test_strategy_open_guard?mode=memory&cache=shared"); err != nil {
-		t.Fatal(err)
-	}
-	orm.RegisterModel(new(models.TestStrategyResults))
-	if err := orm.RunSyncdb("default", true, false); err != nil {
-		t.Fatal(err)
-	}
+	setupTestDB(t)
 
 	coin := &models.Symbols{
 		Symbol: "GUARDUSDT", Leverage: 1, TickSize: "0.01", StepSize: "0.001",
