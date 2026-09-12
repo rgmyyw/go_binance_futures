@@ -1,6 +1,7 @@
 package feature
 
 import (
+	"context"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -56,18 +57,18 @@ func StartPriceChangeNotice() {
 	logs.Info("price change notice bot start")
 }
 
-func handlePriceChangeTick(evt agentevent.Event) {
+func handlePriceChangeTick(ctx context.Context, evt agentevent.Event) error {
 	tick, ok := evt.(agentevent.PriceTickEvent)
 	if !ok {
-		return
+		return nil
 	}
 	snap := priceChangeSnap.Load().(priceChangeSnapshot)
 	if !snap.wsEnabled || snap.limit <= 0 {
-		return
+		return nil
 	}
 	symbol := strings.TrimSpace(tick.Meta.Symbol)
 	if symbol == "" || !snap.watch[symbol] {
-		return
+		return nil
 	}
 	nowMs := time.Now().UnixMilli()
 	value, _ := priceChangeStates.LoadOrStore(symbol, &priceChangeEntry{refPrice: tick.Price})
@@ -75,15 +76,15 @@ func handlePriceChangeTick(evt agentevent.Event) {
 	entry.mu.Lock()
 	defer entry.mu.Unlock()
 	if nowMs-entry.lastAlertAt < priceChangeNoticeCooldown.Milliseconds() {
-		return
+		return nil
 	}
 	if entry.refPrice <= 0 {
 		entry.refPrice = tick.Price
-		return
+		return nil
 	}
 	changePct := (tick.Price - entry.refPrice) / entry.refPrice * 100
 	if changePct < snap.limit && changePct > -snap.limit {
-		return
+		return nil
 	}
 	pusher.SetModuleName("futures").FuturesPriceChangeNotice(notify.FuturesNoticeParams{
 		Title:         " 价格变动提醒",
@@ -101,7 +102,7 @@ func refreshPriceChangeSnapshot() {
 	systemConfig, err := utils.GetSystemConfig()
 	if err != nil {
 		logs.Error("price change notice load config:", err)
-		return
+		return nil
 	}
 	snap := priceChangeSnapshot{
 		wsEnabled: systemConfig.WsFuturesEnable == 1,
@@ -111,7 +112,7 @@ func refreshPriceChangeSnapshot() {
 	var coins []*models.Symbols
 	if _, err := orm.NewOrm().QueryTable("symbols").Filter("enable", 1).All(&coins); err != nil {
 		logs.Error("load enabled symbols for price change notice:", err)
-		return
+		return nil
 	}
 	for _, coin := range coins {
 		if s := strings.TrimSpace(coin.Symbol); s != "" {
