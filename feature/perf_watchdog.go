@@ -25,7 +25,14 @@ var (
 )
 
 func StartPerfWatchdog() {
-	loopRun(PerfWatchdogTick, time.Minute*30)
+	go func() {
+		ticker := time.NewTicker(time.Minute * 30)
+		defer ticker.Stop()
+		for range ticker.C {
+			PerfWatchdogTick()
+		}
+	}()
+	logs.Info("perf watchdog start")
 }
 
 func PerfWatchdogTick() {
