@@ -16,6 +16,7 @@ const (
 	TypeLiquidation Type = "liquidation"
 	TypeFundingRate Type = "funding_rate"
 	TypePosition    Type = "position"
+	TypeRealizedClose Type = "realized_close"
 	TypeWsHealth    Type = "ws_health"
 )
 
@@ -40,6 +41,25 @@ type PriceTickEvent struct {
 }
 
 func (e PriceTickEvent) Metadata() Metadata { return e.Meta }
+
+// RealizedCloseEvent 平仓成交通知(含已实现盈亏), 用于策略业绩统计
+type RealizedCloseEvent struct {
+	Meta         Metadata `json:"meta"`
+	PositionSide string   `json:"position_side"`
+	OrderId      int64    `json:"order_id"`
+	RealizedPnL  float64  `json:"realized_pnl"`
+}
+
+func (e RealizedCloseEvent) Metadata() Metadata { return e.Meta }
+
+func NewRealizedClose(symbol string, positionSide string, orderId int64, pnl float64) RealizedCloseEvent {
+	return RealizedCloseEvent{
+		Meta:         NewMetadata(TypeRealizedClose, symbol, time.Now().UnixMilli(), "ws_order_trade_update"),
+		PositionSide: positionSide,
+		OrderId:      orderId,
+		RealizedPnL:  pnl,
+	}
+}
 
 type LiquidationEvent struct {
 	Meta            Metadata `json:"meta"`

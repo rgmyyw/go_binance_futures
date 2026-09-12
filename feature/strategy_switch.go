@@ -176,3 +176,63 @@ func DemoteLine6() {
 	}
 	logs.Warning("line6 demoted to line5: %d consecutive stop losses, cooldown %dh", line6LossStreakTrigger, line6DemoteCooldownHour)
 }
+
+
+// InitRealizedCloseTracking 初始化去重表并订阅交易所侧平仓事件
+func InitRealizedCloseTracking() {
+	initRealizedCloseSeen()
+	SubscribeRealizedCloseEvents()
+}
+
+// 订阅交易所侧平仓事件: 补齐熔断/降级统计(原先仅统计软止损路径, 交易所止损触发被漏计)
+func SubscribeRealizedCloseEvents() {
+	err := agentevent.DefaultBus().Subscribe(agentevent.TypeRealizedClose, handleRealizedClose)
+	if err != nil {
+		logs.Error("subscribe realized close events:", err)
+	}
+}
+
+// handleRealizedClose 平仓事件处理: 止损级亏损计入熔断与策略降级(可测试)
+func handleRealizedClose(ctx context.Context, evt agentevent.Event) error {
+	rc, ok := evt.(agentevent.RealizedCloseEvent)
+	if !ok || rc.RealizedPnL >= 0 {
+		return nil
+	}
+	realizedCloseMu.Lock()
+	if realizedCloseSeen[rc.OrderId] {
+		realizedCloseMu.Unlock()
+		return nil
+	}
+	realizedCloseSeen[rc.OrderId] = true
+	if len(realizedCloseSeen) > 4096 {
+		realizedCloseSeen = map[int64]bool{}
+	}
+	realizedCloseMu.Unlock()
+
+	if rc.RealizedPnL <= -1.5 { // 止损级亏损(20U仓位预算-1U, 含滑点冗余)
+		recordStopLossEvent()
+		RecordStopLossForStrategy(currentTradeStrategy())
+	}
+	return nil
+}
+
+func currentTradeStrategy() string {
+	cfg, err := utils.GetSystemConfig()
+	if err != nil {
+		return ""
+	}
+	return cfg.FutureStrategyTrade
+}
+
+var (
+	realizedCloseSeen map[int64]bool
+	realizedCloseMu   sync.Mutex
+)
+
+func initRealizedCloseSeen() {
+	realizedCloseMu.Lock()
+	if realizedCloseSeen == nil {
+		realizedCloseSeen = map[int64]bool{}
+	}
+	realizedCloseMu.Unlock()
+}
