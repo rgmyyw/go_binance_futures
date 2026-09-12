@@ -54,6 +54,27 @@ func AutoSwitchStrategyByMarket() {
 	}
 
 	class := regimeClassByCondition(systemConfig.MarketCondition)
+	if regimeLastClass == -1 {
+		// 启动初始化: 直接对齐策略与当前行情类型
+		// (若只在状态里静默记录, 防抖等待期间进程重启会丢失迁移, 策略将卡在旧档位)
+		regimeLastClass = class
+		regimePendingClass = -1
+		want := "line5"
+		if class == 1 {
+			want = "line6"
+		}
+		if systemConfig.FutureStrategyTrade != want {
+			if _, err := o.QueryTable("config").Filter("id", systemConfig.ID).Update(orm.Params{
+				"future_strategy_trade": want,
+			}); err != nil {
+				logs.Error("AutoSwitchStrategyByMarket init align err:", err.Error())
+				return
+			}
+			logs.Info("auto switch strategy by market condition %s: %s -> %s (startup align)",
+				types.MarketConditionName(systemConfig.MarketCondition), systemConfig.FutureStrategyTrade, want)
+		}
+		return
+	}
 	target, newLast, newPending, shouldSwitch := regimeDecideNext(class, regimeLastClass, regimePendingClass)
 	if !shouldSwitch {
 		regimeLastClass, regimePendingClass = newLast, newPending

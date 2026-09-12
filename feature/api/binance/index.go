@@ -1163,7 +1163,10 @@ func WsUserData() {
 				position.Leverage = symbols.Leverage // 杠杆倍数没在这里推送(默认为1), 只能暂时调用接口获取 TODO
 				position.IsolatedWallet = v.IsolatedWallet
 				position.EntryPrice = v.EntryPrice
-				position.MarkPrice = v.MarkPrice
+				if v.MarkPrice != "" {
+					// ACCOUNT_UPDATE 事件可能不携带标记价, 空值不覆写(否则软止盈止损的ROI计算失明)
+					position.MarkPrice = v.MarkPrice
+				}
 				position.UnrealizedProfit = v.UnrealizedPnL
 				position.AccumulatedRealized = v.AccumulatedRealized
 				position.MaintenanceMarginRequired = v.MaintenanceMarginRequired
