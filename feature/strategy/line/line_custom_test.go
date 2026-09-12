@@ -14,7 +14,7 @@ import (
 
 type futuresKlineHelper struct{ Open, High, Low, Close string }
 
-func (h []futuresKlineHelper) toKlines() []*futures.Kline {
+func toKlines(h []futuresKlineHelper) []*futures.Kline {
 	out := make([]*futures.Kline, len(h))
 	for i, b := range h {
 		out[i] = &futures.Kline{Open: b.Open, High: b.High, Low: b.Low, Close: b.Close, OpenTime: int64(1000 - i)}
