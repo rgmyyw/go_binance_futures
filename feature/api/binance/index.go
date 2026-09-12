@@ -1207,6 +1207,13 @@ func WsUserData() {
 			} else {
 				o.Update(&orderModel)
 			}
+			// 平仓成交(有已实现盈亏)发布事件: 供熔断/止损冷却/策略降级统计交易所侧触发(原先只统计软止损路径)
+			if order.RealizedPnL != "" && order.RealizedPnL != "0" {
+				pnl, _ := strconv.ParseFloat(order.RealizedPnL, 64)
+				agentevent.DefaultBus().Publish(agentevent.NewRealizedClose(
+					order.Symbol, string(order.PositionSide), order.ID, pnl,
+				))
+			}
 		} else if event.Event == "ACCOUNT_CONFIG_UPDATE" {
 			config := event.AccountConfigUpdate
 			if config.Leverage == 0 {

@@ -302,6 +302,7 @@ func main() {
 	loopRun(updateSystemConfig, time.Second*2) // 每 2 秒更新一次系统配置信息
 	// 行情自适应策略切换(仅 line5/line6 之间; market_condition 为自动判定时生效)
 	feature.AutoSwitchStrategyByMarket() // 启动立即初始化方向闸门与基准状态, 避免10分钟空窗
+	feature.InitRealizedCloseTracking()  // 订阅交易所侧平仓事件(熔断/降级统计含硬止损)
 	loopRun(feature.AutoSwitchStrategyByMarket, time.Minute*10)
 	// 价格变动提醒(ws_futures_price_change_limit, 对启用币种监控累计涨跌幅)
 	feature.StartPriceChangeNotice()
