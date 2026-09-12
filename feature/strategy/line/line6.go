@@ -28,7 +28,7 @@ func (TradeLine6 TradeLine6) GetCanLongOrShort(openParams strategy.OpenParams) (
 	lastOpenPrice, _ := strconv.ParseFloat(kline_1[0].Open, 64)
 	nowPrice, _ := strconv.ParseFloat(kline_1[0].Close, 64)
 	
-	percentLimit := 0.0015 // 变化幅度(0.15%; 原 0.015 系笔误, 3min 走 1.5% 在震荡市几乎不触发)
+	percentLimit := 0.003 // 变化幅度(0.3%; 实测回放: 0.15% 处于噪音区, meme 币 50h 600+ 信号且期望≈0, 0.3% 为 BTC 均值回归最优阈值)
 	
 	if (nowPrice > lastOpenPrice) && (nowPrice - lastOpenPrice) / lastOpenPrice >= percentLimit {
 		openResult.CanShort = true
