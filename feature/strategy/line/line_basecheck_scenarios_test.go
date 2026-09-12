@@ -27,7 +27,7 @@ func setupSymbolsForBaseCheck(t *testing.T, rows []baseCheckRow) {
 		}
 	}
 	t.Cleanup(func() {
-		_, _ = o.Raw("delete from symbols where symbol like 'BC%'").Exec()
+		_, _ = o.Raw("delete from symbols where symbol like 'BC%' or symbol = 'BTCUSDT'").Exec()
 	})
 }
 
