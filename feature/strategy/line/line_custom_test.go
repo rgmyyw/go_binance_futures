@@ -190,8 +190,11 @@ func TestGetLineFloatValues(t *testing.T) {
 		{Open: "1", High: "2", Low: "0.5", Close: "1.5"},
 		{Open: "2", High: "3", Low: "1", Close: "2.5"},
 	})
-	high, low, close, open := GetLineFloatValues(bars)
+	high, low, close, open, amount, qps := GetLineFloatValues(bars)
 	if len(high) != 2 || high[1] != 3 || low[0] != 0.5 || close[1] != 2.5 || open[0] != 1 {
 		t.Fatalf("GetLineFloatValues 结果错误: %v %v %v %v", high, low, close, open)
+	}
+	if len(amount) != 2 || len(qps) != 2 {
+		t.Fatal("amount/qps 长度应为2")
 	}
 }
