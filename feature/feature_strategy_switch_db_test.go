@@ -122,6 +122,17 @@ func TestAutoSwitchRespectsManualConfig(t *testing.T) {
 	}
 }
 
+func TestAutoSwitchStartupAlignsStrategyAfterRestart(t *testing.T) {
+	setupTestDB(t)
+	// 模拟重启: 状态清零; 库中行情为震荡但策略仍是 line5(旧进程防抖期被杀的场景)
+	resetSwitchState()
+	upsertConfigRow(t, "line5", types.MarketConditionSideways, 1, 1)
+	AutoSwitchStrategyByMarket() // 首次调用即应对齐到 line6, 而非静默记录
+	if got := readConfigStrategy(t); got != "line6" {
+		t.Fatalf("重启后首次调用应对齐策略到line6, got %s", got)
+	}
+}
+
 func TestAutoSwitchGateSyncAlwaysRuns(t *testing.T) {
 	setupTestDB(t)
 	resetSwitchState()
