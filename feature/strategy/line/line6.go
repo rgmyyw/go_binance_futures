@@ -46,7 +46,13 @@ func (TradeLine6 TradeLine6) CanOrderComplete(closeParams strategy.CloseParams) 
 	symbols := closeParams.Symbols // 交易对
 	position := closeParams.Position // 当前仓位
 	closeResult.Complete = false
-	
+
+	if symbols == nil {
+		// 币种信息缺失(如已移出交易表), 与下方取K线失败同语义: 允许平仓
+		closeResult.Complete = true
+		return closeResult
+	}
+
 	lines, err := binance.GetKlineData(symbols.Symbol, "3m", 2)
 	if err != nil {
 		closeResult.Complete = true

@@ -129,13 +129,14 @@ func StartTrade(systemConfig *models.Config) {
 			Position:  position,
 			NowProfit: nowProfit,
 		})
-		if closeResult.Complete { // 触发策略,风向改变,强制平仓
-			logs.Info("%s:auto_stop_start", position.Symbol)
-			if position.Side == "LONG" {
-				order, err := binance.SellMarket(position.Symbol, positionAmtFloatAbs, futures.PositionSideTypeLong)
-				if err == nil {
-					// 数据库写入订单
-					insertCloseOrder(position, positionAmtFloatAbs, unRealizedProfit, position.MarkPrice, order.OrderID, systemConfig)
+			if closeResult.Complete { // 触发策略,风向改变,强制平仓
+				logs.Info("%s:auto_stop_start", position.Symbol)
+				if position.Side == "LONG" {
+					order, err := binance.SellMarket(position.Symbol, positionAmtFloatAbs, futures.PositionSideTypeLong)
+					if err == nil {
+						// 数据库写入订单
+						insertCloseOrder(position, positionAmtFloatAbs, unRealizedProfit, position.MarkPrice, order.OrderID, systemConfig)
+						go CancelSymbolStopOrders(position.Symbol)
 
 					markPrice, _ := strconv.ParseFloat(position.MarkPrice, 64)
 					pusher.SetModuleName("futures").FuturesCloseOrder(notify.FuturesOrderParams{
@@ -170,6 +171,7 @@ func StartTrade(systemConfig *models.Config) {
 				if err == nil {
 					// 数据库写入订单
 					insertCloseOrder(position, positionAmtFloatAbs, unRealizedProfit, position.MarkPrice, order.OrderID, systemConfig)
+					go CancelSymbolStopOrders(position.Symbol)
 
 					markPrice, _ := strconv.ParseFloat(position.MarkPrice, 64)
 					pusher.SetModuleName("futures").FuturesCloseOrder(notify.FuturesOrderParams{
