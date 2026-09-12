@@ -1,6 +1,9 @@
 package feature
 
 import (
+	"sync"
+	"time"
+
 	"go_binance_futures/feature/strategy"
 	"go_binance_futures/models"
 	"go_binance_futures/types"
@@ -117,8 +120,59 @@ func regimeDecideNext(class, last, pending int) (target string, newLast, newPend
 		// 第一次看到新类型, 等下一次确认
 		return "", last, class, false
 	}
-	if class == 1 {
+	if class == 1 && line6Allowed() {
 		return "line6", class, -1, true
 	}
 	return "line5", class, -1, true
+}
+
+// ===== line6 业绩降级护栏 =====
+// line6 实盘连续止损达到阈值时自动降回 line5 并冷却 12 小时, 防止均值回归在错误行情下持续失血
+// (2026-09-12 实盘教训: 多头分化行情下买跌 10 笔 4 胜 6 负 -3.15U, 当晚无反馈机制只能人工止损)
+const (
+	line6LossStreakTrigger  = 3
+	line6DemoteCooldownHour = 12
+)
+
+var (
+	line6LossStreak     int
+	line6DemoteUntilMs  int64
+	strategyGuardMu     sync.Mutex
+)
+
+// line6Allowed 冷却期内不允许选择 line6
+func line6Allowed() bool {
+	strategyGuardMu.Lock()
+	defer strategyGuardMu.Unlock()
+	return time.Now().UnixMilli() >= line6DemoteUntilMs
+}
+
+// RecordStopLossForStrategy 由止损平仓路径调用: 累计当前策略(line6)连亏并自动降级
+// 只对 line6 生效(line5 连亏已有熔断与时间止损兜底)
+func RecordStopLossForStrategy(activeStrategy string) {
+	if activeStrategy != "line6" {
+		return
+	}
+	strategyGuardMu.Lock()
+	line6LossStreak++
+	streak := line6LossStreak
+	strategyGuardMu.Unlock()
+	if streak >= line6LossStreakTrigger {
+		DemoteLine6()
+	}
+}
+
+// DemoteLine6 立即降级: 策略切回 line5(数据库) 并冷却 12 小时
+func DemoteLine6() {
+	strategyGuardMu.Lock()
+	line6DemoteUntilMs = time.Now().Add(line6DemoteCooldownHour * time.Hour).UnixMilli()
+	line6LossStreak = 0
+	strategyGuardMu.Unlock()
+	o := orm.NewOrm()
+	if _, err := o.QueryTable("config").Filter("future_strategy_trade", "line6").Update(orm.Params{
+		"future_strategy_trade": "line5",
+	}); err != nil {
+		logs.Error("DemoteLine6 update config err:", err.Error())
+	}
+	logs.Warning("line6 demoted to line5: %d consecutive stop losses, cooldown %dh", line6LossStreakTrigger, line6DemoteCooldownHour)
 }
