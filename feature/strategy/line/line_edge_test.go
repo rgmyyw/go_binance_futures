@@ -59,7 +59,9 @@ func TestLine5RegimeSidewaysAllowsBoth(t *testing.T) {
 	upBars[1] = k("100", "100", "100", "100", 999)
 	upBars[0] = k("100", "101", "100", "100.95", 1000)
 	defer withKlines(upBars, nil)()
-	if res := TradeLine5{}.GetCanLongOrShort(strategy.OpenParams{Symbols: &models.Symbols{Symbol: "TESTUSDT"}}); !res.CanLong {
+	tl5 := TradeLine5{}
+	res := tl5.GetCanLongOrShort(strategy.OpenParams{Symbols: &models.Symbols{Symbol: "TESTUSDT"}})
+	if !res.CanLong {
 		t.Fatalf("高波动行情应允许多, got %+v", res)
 	}
 }
