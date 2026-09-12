@@ -742,8 +742,8 @@ func TestBaseCheckCanLongOrShortBroadDecline(t *testing.T) {
 		pct := 2.0
 		sym := "TSTA" + string(rune('A'+i))
 		if i < 9 { pct = -6.0 }
-		if _, err := o.Raw("insert into symbols (symbol, enable, percent_change, type) values (?, 0, ?, 'USDT', '', '')", sym, pct).Exec(); err != nil {
-			if _, err := o.Raw("insert into symbols (symbol, enable, percentchange, type, technology, strategy) values (?, 0, ?, 'USDT')", sym, pct).Exec(); err != nil {
+		if _, err := o.Raw("insert into symbols (symbol, enable, percentChange, type, technology, strategy) values (?, 0, ?, 'USDT', '', '')", sym, pct).Exec(); err != nil {
+			if _, err := o.Raw("insert into symbols (symbol, enable, percentchange, type, technology, strategy) values (?, 0, ?, 'USDT', '', '')", sym, pct).Exec(); err != nil {
 				t.Fatalf("插入测试币种失败: %v", err)
 			}
 		}
