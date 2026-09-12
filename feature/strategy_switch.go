@@ -70,7 +70,7 @@ func AutoSwitchStrategyByMarket() {
 	if class == 1 {
 		target = "line6"
 	}
-	_, err = o.QueryTable("config").Filter("id", systemConfig.Id).Update(orm.Params{
+	_, err = o.QueryTable("config").Filter("id", systemConfig.ID).Update(orm.Params{
 		"future_strategy_trade": target,
 	})
 	if err != nil {
