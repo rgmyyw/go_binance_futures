@@ -58,7 +58,7 @@ func TestCalculateBollingerBands(t *testing.T) {
 func TestCalculateROC(t *testing.T) {
 	closes := make([]float64, 15)
 	for i := range closes {
-		closes[i] = float64(100 - i) // 新→旧递减: 114..100 → ROC[0]=(100-114)/114*100<0? 新100 旧114 → 下跌
+		closes[i] = float64(86 + i) // 新→旧: 86..100 → 旧值100 → 新值86, 下跌
 	}
 	roc, err := CalculateROC(closes, 14)
 	if err != nil {

@@ -141,27 +141,27 @@ func TestIsNullAndNormalizeCustomConfig(t *testing.T) {
 
 func TestValidateAndParseTechnologyConfig(t *testing.T) {
 	// 合法配置
-	valid := `{"ma":[{"name":"ma5","klineInterval":"15m","period":5,"enable":true}]}`
+	valid := `{"ma":[{"name":"ma5","kline_interval":"15m","period":5,"enable":true}]}`
 	if err := ValidateTechnologyConfigJSON(valid); err != nil {
 		t.Fatalf("合法配置不应报错: %v", err)
 	}
 	// 保留名
-	reserved := `{"ma":[{"name":"ROI","klineInterval":"15m","period":5,"enable":true}]}`
+	reserved := `{"ma":[{"name":"ROI","kline_interval":"15m","period":5,"enable":true}]}`
 	if err := ValidateTechnologyConfigJSON(reserved); err == nil {
 		t.Fatal("保留名应报错")
 	}
 	// 不支持的周期
-	badInterval := `{"ma":[{"name":"ma5","klineInterval":"7m","period":5,"enable":true}]}`
+	badInterval := `{"ma":[{"name":"ma5","kline_interval":"7m","period":5,"enable":true}]}`
 	if err := ValidateTechnologyConfigJSON(badInterval); err == nil {
 		t.Fatal("非法K线周期应报错")
 	}
 	// 重名
-	dup := `{"ma":[{"name":"m","klineInterval":"15m","period":5,"enable":true},{"name":"m","klineInterval":"1h","period":10,"enable":true}]}`
+	dup := `{"ma":[{"name":"m","kline_interval":"15m","period":5,"enable":true},{"name":"m","kline_interval":"1h","period":10,"enable":true}]}`
 	if err := ValidateTechnologyConfigJSON(dup); err == nil {
 		t.Fatal("重名指标应报错")
 	}
 	// MACD fast>=slow
-	badMacd := `{"macd":[{"name":"macd1","klineInterval":"15m","fastPeriod":26,"slowPeriod":12,"signalPeriod":9,"enable":true}]}`
+	badMacd := `{"macd":[{"name":"macd1","kline_interval":"15m","fastPeriod":26,"slowPeriod":12,"signalPeriod":9,"enable":true}]}`
 	if err := ValidateTechnologyConfigJSON(badMacd); err == nil {
 		t.Fatal("MACD fast>=slow 应报错")
 	}
@@ -169,7 +169,7 @@ func TestValidateAndParseTechnologyConfig(t *testing.T) {
 
 func TestParseTechnologyConfigWithSeam(t *testing.T) {
 	defer withKlines(flatBars("100", 150), nil)()
-	config, klineMap := ParseTechnologyConfig("TESTUSDT", `{"ma":[{"name":"ma5","klineInterval":"15m","period":5,"enable":true}]}`)
+	config, klineMap := ParseTechnologyConfig("TESTUSDT", `{"ma":[{"name":"ma5","kline_interval":"15m","period":5,"enable":true}]}`)
 	cd, ok := config["ma5"]
 	if !ok {
 		t.Fatal("启用的 MA 指标应出现在配置中")
