@@ -27,14 +27,8 @@ func setupTestDB(t *testing.T) {
 			testDBErr = err
 			return
 		}
-		// 自建最小 config 表(只含被测字段), 避免依赖完整 DDL
-		if _, err := orm.NewOrm().Raw(`create table if not exists config (
-			id integer primary key,
-			future_enable integer not null default 0,
-			future_strategy_trade varchar not null default 'line5',
-			market_condition integer not null default 0,
-			market_condition_is_auto integer not null default 1
-		)`).Exec(); err != nil {
+		orm.RegisterModel(new(models.Config))
+		if err := orm.RunSyncdb("default", false, false); err != nil {
 			testDBErr = err
 		}
 	})
@@ -46,15 +40,16 @@ func setupTestDB(t *testing.T) {
 func upsertConfigRow(t *testing.T, strategyTrade string, condition int, isAuto int, futureEnable int) {
 	t.Helper()
 	o := orm.NewOrm()
-	res, err := o.Raw("update config set future_strategy_trade=?, market_condition=?, market_condition_is_auto=?, future_enable=?", strategyTrade, condition, isAuto, futureEnable).Exec()
-	if err != nil {
+	cfg := models.Config{Id: 1}
+	if _, _, err := o.ReadOrCreate(&cfg, "Id"); err != nil {
 		t.Fatal(err)
 	}
-	if n, _ := res.RowsAffected(); n == 0 {
-		_, err = o.Raw("insert into config (id, future_strategy_trade, market_condition, market_condition_is_auto, future_enable) values (1, ?, ?, ?, ?)", strategyTrade, condition, isAuto, futureEnable).Exec()
-		if err != nil {
-			t.Fatal(err)
-		}
+	cfg.FutureStrategyTrade = strategyTrade
+	cfg.MarketCondition = condition
+	cfg.MarketConditionIsAuto = isAuto
+	cfg.FutureEnable = futureEnable
+	if _, err := o.Update(&cfg); err != nil {
+		t.Fatal(err)
 	}
 }
 
