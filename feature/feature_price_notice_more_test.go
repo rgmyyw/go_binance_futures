@@ -15,7 +15,7 @@ func ctx() context.Context { return context.Background() }
 // ===== 价格变动提醒扩展场景 =====
 
 func TestPriceChangeNoticeDownMoveAndCooldownExpiry(t *testing.T) {
-	var pushed []float64
+	var pushed []string
 	prevPush := pushPriceChangeNotice
 	pushPriceChangeNotice = func(symbol string, price float64, pct float64) {
 		pushed = append(pushed, symbol)
