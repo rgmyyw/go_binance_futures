@@ -449,6 +449,9 @@ func StartTrade(systemConfig *models.Config) {
 
 		if systemConfig.FutureAllowLong == 1 && hasPositionLong == false && hasBuyOrderLong == false && openResult.CanLong && !openOnCooldown(symbol, positionSideLong) {
 			buyPrice, _, err := binance.GetDepthAvgPrice(symbol, 5) // 平均买价
+			if err != nil {
+				logs.Error("%s:get depth avg price for open long failed, skip this round: %s", symbol, err.Error())
+			}
 			if err == nil {
 				buyPrice = utils.GetTradePrecision(buyPrice, tickSize)   // 合理精度的价格
 				quantity := (usdt_float64 / buyPrice) * leverage_float64 // 购买数量
@@ -529,6 +532,9 @@ func StartTrade(systemConfig *models.Config) {
 		if systemConfig.FutureAllowShort == 1 && hasPositionShort == false && hasBuyOrderShort == false && openResult.CanShort && !openOnCooldown(symbol, positionSideShort) {
 
 			_, sellPrice, err := binance.GetDepthAvgPrice(symbol, 5) // 平均卖价
+			if err != nil {
+				logs.Error("%s:get depth avg price for open short failed, skip this round: %s", symbol, err.Error())
+			}
 			if err == nil {
 				sellPrice = utils.GetTradePrecision(sellPrice, tickSize)  // 合理精度的价格
 				quantity := (usdt_float64 / sellPrice) * leverage_float64 // 购买数量
@@ -1228,8 +1234,10 @@ func getTransformOpenOrders() (useOrders []types.FuturesOrder, err error) {
 }
 
 var orderCount = 0 // 计数器, 当连续平仓盈利 2次(或亏损2次)后,增大(缩小)窗口
-func AutoLossScale(systemConfig *models.Config, flag bool) {
-	if systemConfig.LossAutoScale == 0 {
+// AutoLossScale 自动调节亏损闸门时 loss_max_count 的上限
+const maxAutoScaleLossCount = 20
+
+func AutoLossScale(systemConfig *models.Config, flag bool) {	if systemConfig.LossAutoScale == 0 {
 		return
 	}
 	if flag {
@@ -1239,10 +1247,16 @@ func AutoLossScale(systemConfig *models.Config, flag bool) {
 	}
 	if orderCount >= 2 {
 		orderCount = 0
-		// 增加窗口
-		orm.NewOrm().QueryTable("config").Filter("id", systemConfig.ID).Update(orm.Params{
-			"loss_max_count": systemConfig.LossMaxCount + 1,
-		})
+		// 增加窗口(封顶, 防止长赢 streak 把亏损闸门推到形同虚设)
+		newCount := systemConfig.LossMaxCount + 1
+		if newCount > maxAutoScaleLossCount {
+			newCount = maxAutoScaleLossCount
+		}
+		if newCount != systemConfig.LossMaxCount {
+			orm.NewOrm().QueryTable("config").Filter("id", systemConfig.ID).Update(orm.Params{
+				"loss_max_count": newCount,
+			})
+		}
 	}
 	if orderCount <= -2 {
 		orderCount = 0
