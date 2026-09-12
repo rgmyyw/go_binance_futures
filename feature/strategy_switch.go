@@ -65,8 +65,9 @@ func AutoSwitchStrategyByMarket() {
 		// (若只在状态里静默记录, 防抖等待期间进程重启会丢失迁移, 策略将卡在旧档位)
 		regimeLastClass = class
 		regimePendingClass = -1
+		// 与 regimeDecideNext 保持一致: line6 硬禁用期间, 震荡类同样维持 line5
 		want := "line5"
-		if class == 1 {
+		if class == 1 && line6Allowed() && line6Enabled() {
 			want = "line6"
 		}
 		if systemConfig.FutureStrategyTrade != want {
@@ -124,7 +125,7 @@ func regimeDecideNext(class, last, pending int) (target string, newLast, newPend
 		return "", last, class, false
 	}
 	// line6 均值回归: 2026-09-12 实盘 29 笔 -5.57U(多空双向皆亏), 实证无边际, 硬禁用
-	if false && class == 1 && line6Allowed() {
+	if class == 1 && line6Enabled() && line6Allowed() {
 		return "line6", class, -1, true
 	}
 	return "line5", class, -1, true
@@ -143,6 +144,9 @@ var (
 	line6DemoteUntilMs  int64
 	strategyGuardMu     sync.Mutex
 )
+
+// line6Enabled line6(均值回归)总开关: 当前停用(2026-09-12 实盘 29 笔 -5.57U)
+func line6Enabled() bool { return false }
 
 // line6Allowed 冷却期内不允许选择 line6
 func line6Allowed() bool {
