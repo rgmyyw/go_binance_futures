@@ -86,12 +86,5 @@ func TestRealizedCloseEventDrivesDemotion(t *testing.T) {
 }
 
 func handleRealizedCloseForTest(orderId int64, pnl float64) error {
-	return handleRealizedClose(context.Background(), evtFakeRealizedClose{orderId: orderId, pnl: pnl})
+	return handleRealizedClose(context.Background(), agentevent.NewRealizedClose("TESTUSDT", "LONG", orderId, pnl))
 }
-
-type evtFakeRealizedClose struct {
-	orderId int64
-	pnl     float64
-}
-
-func (e evtFakeRealizedClose) Metadata() agentevent.Metadata { return agentevent.Metadata{} }

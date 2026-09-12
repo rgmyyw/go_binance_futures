@@ -50,7 +50,7 @@ func TestRegimeDecideNextDebounce(t *testing.T) {
 		{"行情未变不切换", 0, 0, -1, "", 0, -1, false},
 		{"同类型时清理pending", 1, 1, 0, "", 1, -1, false},
 		{"新类型第一次只登记等待确认", 1, 0, -1, "", 0, 1, false},
-		{"新类型第二次确认切换为震荡策略", 1, 0, 1, "line6", 1, -1, true},
+		{"新类型第二次确认切换(line6禁用→维持line5)", 1, 0, 1, "line5", 1, -1, true},
 		{"新类型第二次确认切换为趋势策略", 0, 1, 0, "line5", 0, -1, true},
 		{"pending期间又见旧类型则重置pending", 0, 0, 1, "", 0, -1, false},
 		{"反复横跳不切换", 1, 0, 0, "", 0, 1, false},

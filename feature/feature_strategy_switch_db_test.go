@@ -84,24 +84,12 @@ func TestAutoSwitchStrategyByMarketEndToEnd(t *testing.T) {
 		t.Fatalf("首启不应切换, got %s", got)
 	}
 
-	// 行情变震荡: 第一次只登记
+	// 行情变震荡: line6 已实证禁用, 确认后仍维持 line5
 	upsertConfigRow(t, "line5", types.MarketConditionSideways, 1, 1)
 	AutoSwitchStrategyByMarket()
-	if got := readConfigStrategy(t); got != "line5" {
-		t.Fatalf("防抖期间不应切换, got %s", got)
-	}
-	// 第二次确认 → 切到 line6
-	AutoSwitchStrategyByMarket()
-	if got := readConfigStrategy(t); got != "line6" {
-		t.Fatalf("确认后应切换到line6, got %s", got)
-	}
-
-	// 行情回趋势: 防抖两拍 → 切回 line5
-	upsertConfigRow(t, "line6", types.MarketConditionBroadRise, 1, 1)
-	AutoSwitchStrategyByMarket()
 	AutoSwitchStrategyByMarket()
 	if got := readConfigStrategy(t); got != "line5" {
-		t.Fatalf("趋势确认后应切回line5, got %s", got)
+		t.Fatalf("line6禁用后震荡应维持line5, got %s", got)
 	}
 }
 
