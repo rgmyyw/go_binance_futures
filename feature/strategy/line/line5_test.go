@@ -46,13 +46,13 @@ func withRegime(condition int) (restore func()) {
 }
 
 func TestLine5LongSignalOnMomentum(t *testing.T) {
-	defer withKlines(nil, nil)()
 	defer withRegime(0)()
 
 	// 前一根开盘100, 当前收100.95 (+0.95% ≥0.9%), 窗口内无≥1.5%振幅K线
 	bars := flatBars("100", 30)
 	bars[1] = k("100", "100", "100", "100", 999)
 	bars[0] = k("100", "100.95", "100", "100.95", 1000)
+	defer withKlines(bars, nil)()
 
 	res := TradeLine5{}.GetCanLongOrShort(strategy.OpenParams{Symbols: &models.Symbols{Symbol: "TESTUSDT"}})
 	if !res.CanLong {
@@ -64,12 +64,12 @@ func TestLine5LongSignalOnMomentum(t *testing.T) {
 }
 
 func TestLine5ShortSignalOnDownMomentum(t *testing.T) {
-	defer withKlines(nil, nil)()
 	defer withRegime(0)()
 
 	bars := flatBars("100", 30)
 	bars[1] = k("100", "100", "100", "100", 999)
 	bars[0] = k("100", "100", "99.0", "99.0", 1000) // -1%
+	defer withKlines(bars, nil)()
 
 	res := TradeLine5{}.GetCanLongOrShort(strategy.OpenParams{Symbols: &models.Symbols{Symbol: "TESTUSDT"}})
 	if !res.CanShort {
@@ -78,11 +78,10 @@ func TestLine5ShortSignalOnDownMomentum(t *testing.T) {
 }
 
 func TestLine5BelowThresholdNoSignal(t *testing.T) {
-	defer withKlines(nil, nil)()
-
 	bars := flatBars("100", 30)
 	bars[1] = k("100", "100", "100", "100", 999)
 	bars[0] = k("100", "100.5", "100", "100.5", 1000) // +0.5% < 0.9%
+	defer withKlines(bars, nil)()
 
 	res := TradeLine5{}.GetCanLongOrShort(strategy.OpenParams{Symbols: &models.Symbols{Symbol: "TESTUSDT"}})
 	if res.CanLong || res.CanShort {
@@ -91,13 +90,12 @@ func TestLine5BelowThresholdNoSignal(t *testing.T) {
 }
 
 func TestLine5SpikeWindowBlocksEntry(t *testing.T) {
-	defer withKlines(nil, nil)()
-
 	// 窗口内第10根出现过 2% 振幅(突变), 即使满足动量也放弃
 	bars := flatBars("100", 30)
 	bars[10] = k("100", "102", "100", "101", 990)
 	bars[1] = k("100", "100", "100", "100", 999)
 	bars[0] = k("100", "101", "100", "100.95", 1000)
+	defer withKlines(bars, nil)()
 
 	res := TradeLine5{}.GetCanLongOrShort(strategy.OpenParams{Symbols: &models.Symbols{Symbol: "TESTUSDT"}})
 	if res.CanLong || res.CanShort {
