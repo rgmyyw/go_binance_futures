@@ -712,9 +712,9 @@ func TestLine7KeltnerBreakdownShort(t *testing.T) {
 	if !res.CanShort { t.Fatalf("line7 肯纳特上轨破位应触发做空, got %+v", res) }
 }
 
-var marketReversalLongExitCloses = []float64{100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.5, 101.0, 99.0, 97.0}
+var marketReversalLongExitCloses = []float64{97.0, 99.0, 101.0, 100.5, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0}
 
-var marketReversalShortExitCloses = []float64{100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 99.5, 99.0, 101.0, 103.0}
+var marketReversalShortExitCloses = []float64{103.0, 101.0, 99.0, 99.5, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0}
 
 func TestMarketReversalLongExit(t *testing.T) {
 	defer withKlines(closeBars(marketReversalLongExitCloses), nil)()
@@ -742,8 +742,8 @@ func TestBaseCheckCanLongOrShortBroadDecline(t *testing.T) {
 		pct := 2.0
 		sym := "TSTA" + string(rune('A'+i))
 		if i < 9 { pct = -6.0 }
-		if _, err := o.Raw("insert into symbols (symbol, enable, percent_change, type, technology, strategy) values (?, 0, ?, 'USDT', '', '')", sym, pct).Exec(); err != nil {
-			if _, err := o.Raw("insert into symbols (symbol, enable, percentchange, type, technology, strategy) values (?, 0, ?, 'USDT', '', '')", sym, pct).Exec(); err != nil {
+		if _, err := o.Raw("insert into symbols (symbol, enable, percent_change, type) values (?, 0, ?, 'USDT', '', '')", sym, pct).Exec(); err != nil {
+			if _, err := o.Raw("insert into symbols (symbol, enable, percentchange, type, technology, strategy) values (?, 0, ?, 'USDT')", sym, pct).Exec(); err != nil {
 				t.Fatalf("插入测试币种失败: %v", err)
 			}
 		}
