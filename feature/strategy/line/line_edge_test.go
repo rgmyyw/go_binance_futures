@@ -1,6 +1,7 @@
 package line
 
 import (
+	"math"
 	"testing"
 	"time"
 
@@ -142,16 +143,55 @@ func TestLineCanOrderCompleteUnknownSide(t *testing.T) {
 	}
 	tl2 := TradeLine2{}
 	tl2res := tl2.CanOrderComplete(strategy.CloseParams{Symbols: &models.Symbols{Symbol: "T"}, Position: types.FuturesPosition{Side: "BOTH"}})
-	if tl2res.Complete {
-		t.Fatal("line2 未知方向按既有实现不应平仓")
+	if !tl2res.Complete {
+		t.Fatal("line2 未知方向按既有实现(else)应放行平仓")
+	}
+	tl5 := TradeLine5{}
+	tl5res := tl5.CanOrderComplete(strategy.CloseParams{Symbols: &models.Symbols{Symbol: "T"}, Position: types.FuturesPosition{Side: "BOTH"}})
+	if tl5res.Complete {
+		t.Fatal("line5 未知方向按既有实现(无else)不应平仓")
 	}
 }
 
 // ===== line3 金叉/死叉路径(复用 line2 夹具) =====
 
+// shapeBarsFromCloses 用收盘价构造 OHLC, 并在最低/最高收盘K线上合成 line3 要求的大实体形态
+func shapeBarsFromCloses(closes []float64, longShape bool) []*futures.Kline {
+	n := len(closes)
+	bars := make([][4]float64, n)
+	for i := 0; i < n; i++ {
+		c := closes[i]
+		prev := c
+		if i < n-1 {
+			prev = closes[i+1] // 时间上的前一根收盘
+		}
+		o := prev
+		h := math.Max(o, c) + 0.01
+		l := math.Min(o, c) - 0.01
+		bars[i] = [4]float64{o, h, l, c}
+	}
+	mi, xi := 0, 0
+	for i := range bars {
+		if bars[i][3] < bars[mi][3] {
+			mi = i
+		}
+		if bars[i][3] > bars[xi][3] {
+			xi = i
+		}
+	}
+	if longShape {
+		c := bars[mi][3]
+		bars[mi] = [4]float64{c * 1.04, c + 0.05, c - 0.05, c} // 阴线大实体小影线, 仍为最低
+	} else {
+		c := bars[xi][3]
+		bars[xi] = [4]float64{c * 0.96, c + 0.05, c - 0.05, c} // 阳线大实体小上影, 仍为最高
+	}
+	return ohlcBars(bars)
+}
+
 func TestLine3GoldenCrossPath(t *testing.T) {
 	// line2 多头夹具同样满足 line3 的 EMA3/7 金叉 + rsi>40 条件
-	defer withKlines(closeBars(line2LongCloses), nil)()
+	defer withKlines(shapeBarsFromCloses(line2LongCloses, true), nil)()
 	res := TradeLine3{}.GetCanLongOrShort(strategy.OpenParams{Symbols: &models.Symbols{Symbol: "TESTUSDT"}})
 	if !res.CanLong {
 		t.Fatalf("line3 金叉路径应触发做多, got %+v", res)
@@ -159,7 +199,7 @@ func TestLine3GoldenCrossPath(t *testing.T) {
 }
 
 func TestLine3DeathCrossPath(t *testing.T) {
-	defer withKlines(closeBars(line2ShortCloses), nil)()
+	defer withKlines(shapeBarsFromCloses(line2ShortCloses, false), nil)()
 	res := TradeLine3{}.GetCanLongOrShort(strategy.OpenParams{Symbols: &models.Symbols{Symbol: "TESTUSDT"}})
 	if !res.CanShort {
 		t.Fatalf("line3 死叉路径应触发做空, got %+v", res)
