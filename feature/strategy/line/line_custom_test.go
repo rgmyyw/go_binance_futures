@@ -80,7 +80,7 @@ func TestLineCustomInvalidJSONNoPanic(t *testing.T) {
 
 func TestLineCustomCloseStrategy(t *testing.T) {
 	setupLineTestDB(t)
-	defer withKlines([]*futuresKlineHelper{{Open: "100", High: "100", Low: "99", Close: "99"}, {Open: "100", High: "100", Low: "100", Close: "100"}}.toKlines(), nil)()
+	defer withKlines(toKlines([]futuresKlineHelper{{Open: "100", High: "100", Low: "99", Close: "99"}, {Open: "100", High: "100", Low: "100", Close: "100"}}), nil)()
 	pos := typesFuturesPosition("LONG")
 
 	// 平多表达式恒真 → 平仓
@@ -99,7 +99,7 @@ func TestLineCustomCloseStrategy(t *testing.T) {
 }
 
 func TestLineCustomSimpleCloseStrategyFixedGate(t *testing.T) {
-	defer withKlines([]*futuresKlineHelper{{Open: "100", High: "100", Low: "99", Close: "99"}, {Open: "100", High: "100", Low: "100", Close: "100"}}.toKlines(), nil)()
+	defer withKlines(toKlines([]futuresKlineHelper{{Open: "100", High: "100", Low: "99", Close: "99"}, {Open: "100", High: "100", Low: "100", Close: "100"}}), nil)()
 	pos := typesFuturesPosition("LONG")
 	sym := &models.Symbols{Symbol: "T"}
 
