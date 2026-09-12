@@ -8,6 +8,7 @@ import (
 	agentevent "go_binance_futures/agent/event"
 	"go_binance_futures/feature/strategy"
 	"go_binance_futures/models"
+	"go_binance_futures/utils"
 	"go_binance_futures/types"
 
 	"github.com/beego/beego/v2/client/orm"
