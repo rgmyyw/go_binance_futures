@@ -19,16 +19,21 @@ func TestLine1And2AutoStopOrderAlwaysFalse(t *testing.T) {
 	}
 }
 
-// line3/line4/line7 AutoStopOrder: ±3 门外不动作, 门内走 MarketReversal
+// line3/line4 AutoStopOrder: ±3 门外不动作, 门内走 MarketReversal
+// line7 仅验证门外不动作(其 MarketReversal 为空实现, 见 TestLine7MarketReversalAlwaysFalse)
 func TestLine347AutoStopOrderGateAndReversal(t *testing.T) {
 	defer withKlines(closeBars(marketReversalLongExitCloses), nil)()
 	sym := &models.Symbols{Symbol: "TESTUSDT"}
 	longPos := types.FuturesPosition{Symbol: "TESTUSDT", Side: "LONG", CreateTime: 1}
 
+	if res := (TradeLine7{}).AutoStopOrder(strategy.CloseParams{Symbols: sym, Position: longPos, NowProfit: 5}); res.Complete {
+		t.Fatal("line7: NowProfit>3 不应触发反转退出")
+	}
+
 	for name, s := range map[string]interface {
 		AutoStopOrder(strategy.CloseParams) strategy.CloseResult
 	}{
-		"line3": TradeLine3{}, "line4": TradeLine4{}, "line7": TradeLine7{},
+		"line3": TradeLine3{}, "line4": TradeLine4{},
 	} {
 		// 盈亏门外: 不动作
 		if res := s.AutoStopOrder(strategy.CloseParams{Symbols: sym, Position: longPos, NowProfit: 5}); res.Complete {
