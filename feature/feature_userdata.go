@@ -98,7 +98,8 @@ func getNowUserData() {
 		}
 	}
 	
-	// open orders
+	// open orders(与 positions 两次全量重请求错开, 避免同一分钟权重突刺触发 -1003)
+	time.Sleep(3 * time.Second)
 	allOpenOrders, err := binance.GetOpenOrder()
 	if err != nil {
 		logs.Error("GetOpenOrder err in feature_userdata:", err.Error())
