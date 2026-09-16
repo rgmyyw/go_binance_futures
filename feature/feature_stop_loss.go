@@ -1,6 +1,8 @@
 package feature
 
 import (
+	"context"
+
 	"go_binance_futures/feature/api/binance"
 	"go_binance_futures/models"
 	"go_binance_futures/utils"
@@ -51,7 +53,7 @@ func CancelSymbolStopOrders(symbol string) {
 		if order.OrderType != futures.AlgoOrderTypeStopMarket {
 			continue
 		}
-		if _, err := binance.CancelAlgoOrder(order.AlgoId); err == nil {
+		if _, err := binance.CancelAlgoOrder(context.Background(), order.AlgoId); err == nil {
 			logs.Info("%s:exchange stop loss cancelled", symbol)
 		}
 	}
@@ -81,7 +83,7 @@ func SyncStopOrders() {
 			continue
 		}
 		if !liveSymbols[order.Symbol] {
-			if _, err := binance.CancelAlgoOrder(order.AlgoId); err == nil {
+			if _, err := binance.CancelAlgoOrder(context.Background(), order.AlgoId); err == nil {
 				logs.Info("%s:stale exchange stop loss cancelled", order.Symbol)
 			}
 		}

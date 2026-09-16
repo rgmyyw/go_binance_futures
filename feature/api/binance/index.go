@@ -683,10 +683,7 @@ func GetOpenAlgoOrders(symbols ...string) (res []futures.GetAlgoOrderResp, err e
 	return service.Do(context.Background())
 }
 
-// 撤销 Algo 挂单
-func CancelAlgoOrder(algoId int64) (res *futures.CancelAlgoOrderResp, err error) {
-	return futuresClient.NewCancelAlgoOrderService().AlgoID(algoId).Do(context.Background())
-}
+// 撤销 Algo 挂单统一走 CancelAlgoOrder(ctx, algoID)
 
 type FundingRateParams struct {
 	Symbol    string
