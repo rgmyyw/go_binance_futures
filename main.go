@@ -459,8 +459,6 @@ func main() {
 			feature.RepairNoticeAutoOrderProtections()
 		}
 	}, time.Minute)
-=======
-	}, time.Second*time.Duration(tradeInterval))
 
 	// 30 分钟检查一次所有未平仓的订单, 一次 200 条，此处是兜底行为，处理一些意外情况
 	// 处理 app 上已经平仓的订单，但是系统中没有找到对应的平仓订单
