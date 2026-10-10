@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/beego/beego/v2/core/config"
+	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -70,11 +71,31 @@ func registerAPITools(server *mcp.Server) {
 			Name:         definition.Name,
 			Description:  fmt.Sprintf("[%s] %s。对应 HTTP 接口：%s %s", definition.Category, definition.Description, definition.Method, definition.Path),
 			InputSchema:  mustSchema[APIToolInput](),
-			OutputSchema: mustSchema[APIResult](),
+			OutputSchema: sanitizeOutputSchema(mustSchema[APIResult]()),
 		}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			return callAPITool(ctx, req, definition)
 		})
 	}
+}
+
+// sanitizeOutputSchema 把 jsonschema.For 对 any 类型字段生成的布尔 schema(true)
+// 替换为仅含 description 的对象 schema。MCP 客户端(openclaw 2026.9.7+)的严格
+// outputSchema 校验不接受布尔 schema 节点,会导致整个工具被拒载。
+// 注意不能用空对象 {} —— go-sdk 的 MarshalJSON 会把零值 Schema 重新折叠成 true。
+func sanitizeOutputSchema(s *jsonschema.Schema) *jsonschema.Schema {
+	raw, err := json.Marshal(s)
+	if err != nil {
+		return s
+	}
+	if !bytes.Contains(raw, []byte(`"body":true`)) {
+		return s
+	}
+	fixed := bytes.ReplaceAll(raw, []byte(`"body":true`), []byte(`"body":{"description":"任意 JSON 值(对象/数组/字符串/数字)"}`))
+	out := &jsonschema.Schema{}
+	if err := json.Unmarshal(fixed, out); err != nil {
+		return s
+	}
+	return out
 }
 
 func callAPITool(ctx context.Context, req *mcp.CallToolRequest, definition APIToolDefinition) (*mcp.CallToolResult, error) {
