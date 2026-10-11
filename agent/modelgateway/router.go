@@ -314,6 +314,10 @@ func classifyRouteError(err error) (string, bool) {
 			// This is candidate/provider-specific rather than a malformed request.
 			// Allow the gateway to try another configured provider/model.
 			return "unsupported_location", true
+		case isProviderContentFilter(httpError):
+			// Provider-side moderation depends on generated content, so another
+			// candidate (or a retry on a different model) can complete normally.
+			return "content_filter", true
 		default:
 			return fmt.Sprintf("http_%d", httpError.StatusCode), false
 		}
@@ -328,4 +332,14 @@ func isProviderLocationUnsupported(err *llm.HTTPError) bool {
 	body := strings.ToLower(strings.TrimSpace(err.Body))
 	return strings.Contains(body, "user location is not supported") ||
 		(strings.Contains(body, "failed_precondition") && strings.Contains(body, "location"))
+}
+
+func isProviderContentFilter(err *llm.HTTPError) bool {
+	if err == nil || err.StatusCode != 400 {
+		return false
+	}
+	body := strings.ToLower(strings.TrimSpace(err.Body))
+	return strings.Contains(body, "contentfilter") ||
+		strings.Contains(body, "content_filter") ||
+		(strings.Contains(body, `"code":"1301"`) || strings.Contains(body, `"code":1301`))
 }

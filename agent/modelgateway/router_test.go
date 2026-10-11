@@ -193,6 +193,36 @@ func TestGatewayFallbackOnProviderLocationUnsupported(t *testing.T) {
 	}
 }
 
+func TestGatewayFallbackOnProviderContentFilter(t *testing.T) {
+	primary := routingConfig(1, true, llm.ProviderGLM, "glm-5.3", llm.ModelProfile{StructuredOutput: true, JSONReliability: 90})
+	secondary := routingConfig(2, false, llm.ProviderGLM, "glm-5.3-flash", llm.ModelProfile{StructuredOutput: true, JSONReliability: 80})
+	settings := llm.DefaultRouterSettings()
+	settings.Enabled = 1
+	settings.FallbackEnabled = 1
+	clients := map[int64]*fakeClient{
+		1: {provider: llm.ProviderGLM, err: &llm.HTTPError{StatusCode: 400, Body: `{"contentFilter":[{"level":2,"role":"assistant"}],"error":{"code":"1301","message":"系统检测到输入或生成内容可能包含不安全或敏感内容，请您避免输入易产生敏感内容的提示语，感谢您的配合。"}}`}},
+		2: {provider: llm.ProviderGLM, response: &llm.Response{Model: "glm-5.3-flash", Content: "ok"}},
+	}
+	router := newTestRouter(fakeStore{settings: settings, configs: []llm.RoutingConfig{primary, secondary}}, clients)
+	client, _, err := router.Route(context.Background(), llm.RouteRequest{Skill: "symbol_team_technical", Requirements: llm.ModelRequirements{StructuredOutput: true, MinJSONReliability: 75}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	response, err := client.Generate(context.Background(), llm.Request{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if response.ConfigID != 2 {
+		t.Fatalf("unexpected fallback response: %+v", response)
+	}
+	if clients[1].calls != 1 || clients[2].calls != 1 {
+		t.Fatalf("unexpected calls primary=%d fallback=%d", clients[1].calls, clients[2].calls)
+	}
+	if response.RouteTrace == nil || len(response.RouteTrace.Attempts) != 2 || response.RouteTrace.Attempts[0].ErrorType != "content_filter" {
+		t.Fatalf("unexpected route trace: %+v", response.RouteTrace)
+	}
+}
+
 func TestGatewayGenericHTTP400DoesNotFallback(t *testing.T) {
 	primary := routingConfig(1, true, llm.ProviderGemini, "gemini-primary", llm.ModelProfile{StructuredOutput: true, JSONReliability: 90})
 	secondary := routingConfig(2, false, llm.ProviderOpenAICompatible, "fallback", llm.ModelProfile{StructuredOutput: true, JSONReliability: 80})
